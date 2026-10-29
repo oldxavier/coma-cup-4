@@ -79,12 +79,10 @@ function links() {
 function summary() {
   const millions = (D.meta.data_points / 1e6).toLocaleString("en-US", { maximumFractionDigits: 1 });
   document.getElementById("data-points").textContent = `${millions} million data points from ${D.meta.games} games`;
-  const kills = D.players.all.reduce((n, r) => n + r.kills, 0);
   const date = new Date(D.meta.updated + "T12:00:00Z").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
   const cells = [
-    [D.meta.games, `games captured · through round ${D.meta.through_round}`],
-    [Object.keys(D.people).length, "players"],
-    [kills.toLocaleString("en-US"), "units killed"],
+    [D.meta.games, "games captured"],
+    [D.meta.registered, "players"],
     [date, "last update"],
   ];
   document.getElementById("summary").innerHTML = cells

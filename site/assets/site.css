@@ -128,7 +128,7 @@ h3 { margin: 0 0 .65rem; font-size: 1.15rem; line-height: 1.3; }
 
 .stats {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   max-width: 1160px;
   margin: auto;
   border-top: 1px solid var(--line);
@@ -464,7 +464,7 @@ footer {
   .stats { grid-template-columns: 1fr 1fr; }
   .stats div { border-bottom: 1px solid var(--line); }
   .stats div:nth-child(2) { border-right: 0; }
-  .stats div:nth-child(3) { padding-left: 0; }
+  .stats div:nth-child(3) { grid-column: 1 / -1; padding-left: 0; border-right: 0; }
 }
 
 @media (max-width: 600px) {
