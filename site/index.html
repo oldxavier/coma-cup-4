@@ -54,17 +54,6 @@
   </header>
 
   <main id="main">
-    <section class="section highlights" aria-labelledby="highlights-title">
-      <div class="section-heading">
-        <div>
-          <p class="section-label">Records to beat</p>
-          <h2 id="highlights-title">The headlines so far</h2>
-        </div>
-        <div class="heading-note"><p>Each card is the current #1 of a leaderboard below. They change on their own when a record falls.</p></div>
-      </div>
-      <div class="highlight-grid" id="highlights"></div>
-    </section>
-
     <section class="section band" id="groups" aria-labelledby="groups-title">
       <div class="section-heading">
         <div>
@@ -94,6 +83,7 @@
       </div>
       <div class="category-bar">
         <div class="scope-switch" id="category-switch" role="tablist" aria-label="Record category"></div>
+        <div class="scope-switch role-switch" role="group" aria-label="Player role"></div>
       </div>
       <p class="category-blurb" id="category-blurb"></p>
       <div class="board-grid" id="boards"></div>
@@ -105,10 +95,11 @@
           <p class="section-label">Every player</p>
           <h2 id="players-title">Players</h2>
         </div>
-        <div class="heading-note"><p>Totals and averages over each player's games. Times are averages of the age-up clock; idle TC is Town Center idle time before Castle Age.</p></div>
+        <div class="heading-note"><p>Totals and averages over each player's games, or only their flank or pocket games. Age times are averages of the age-up clock; idle TC is Town Center idle time before reaching that age.</p></div>
       </div>
       <div class="leader-controls">
         <label><span>Find a player or team</span><input id="player-search" type="search" placeholder="e.g. Juyhou" autocomplete="off"></label>
+        <div><span class="control-label">Games played as</span><div class="scope-switch role-switch" role="group" aria-label="Player role"></div></div>
       </div>
       <p class="sort-help">Select a column heading to sort.</p>
       <div class="table-shell">
