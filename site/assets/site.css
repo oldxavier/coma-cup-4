@@ -332,16 +332,6 @@ h3 { margin: 0 0 .65rem; font-size: 1.15rem; line-height: 1.3; }
 .board .empty { margin: .6rem 0 0; color: var(--muted); font-size: .8rem; }
 .board-top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .3rem .6rem; margin-bottom: .2rem; }
 .board .scope { color: var(--gold); font: .66rem var(--mono); letter-spacing: .04em; text-transform: uppercase; }
-.hint {
-  padding: .05rem .45rem;
-  border: 1px solid #dbc995;
-  border-radius: 99px;
-  color: #7a5a17;
-  background: var(--gold-soft);
-  font-size: .64rem;
-  font-weight: 600;
-  line-height: 1.5;
-}
 /* each card's own switches: role, and top or bottom of the list */
 .card-controls { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .3rem 1rem; margin: .35rem 0 .55rem; }
 .seg { display: inline-flex; gap: .15rem; font-size: .74rem; }
@@ -399,8 +389,8 @@ details.minor > .board-grid { margin-top: .4rem; }
 .board li .who { min-width: 0; font-size: .86rem; font-weight: 650; line-height: 1.35; }
 .board li .who .main, .board li .who small { display: block; overflow-wrap: anywhere; }
 .board li .who small { color: var(--muted); font-size: .72rem; font-weight: 400; }
-.board li .who small .civ { display: inline; }
-.board li .who small .emblem { margin-right: .25rem; vertical-align: -.2rem; }
+.board li .who .civ { display: inline; margin-left: .2rem; color: var(--muted); font-size: .74rem; font-weight: 400; white-space: nowrap; }
+.board li .who .emblem { margin-right: .25rem; vertical-align: -.2rem; }
 .board li .val { color: var(--green); font: 500 .9rem var(--mono); text-align: right; white-space: nowrap; }
 .board li:first-child .val { font-size: 1.05rem; }
 .board li.extra { display: none; }

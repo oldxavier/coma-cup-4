@@ -6,7 +6,7 @@ let D, gamesById, category, role = "all";   // role: the players table's filter
 const flipped = new Set();          // boards showing their "least" side
 const refresh = [];                 // redraws that depend on the players table's role
 
-fetch("data/cc4.json")
+fetch("data/cc4.json", { cache: "no-cache" })
   .then((r) => r.json())
   .then((data) => {
     D = data;
@@ -245,21 +245,16 @@ function redrawCard(id, focus) {
   if (target) target.focus();
 }
 
+// a row: the name (with the civ beside it), then one short line each for the game and any detail
 function who(b, r) {
-  if (b.scope === "match") return { main: gameLabel(r.g), sub: esc(`Round ${gamesById[r.g].round} · Group ${gamesById[r.g].group}`) };
-  if (b.scope === "object") return { main: r.o, sub: `${esc(player(r.p))} · ${civTag(r.civ)} · ${esc(gameLabel(r.g))}` };
-  if (b.scope === "player") {
-    const bits = [];
-    if (r.d) bits.push(esc(r.d));
-    bits.push(esc(team(D.people[r.p].team)), `${r.n} game${r.n === 1 ? "" : "s"}`);
-    return { main: player(r.p), sub: bits.join(" · ") };
-  }
-  const bits = [civTag(r.civ), esc(gameLabel(r.g))];
-  if (r.d) bits.unshift(esc(r.d));
-  return { main: player(r.p), sub: bits.join(" · ") };
+  if (b.scope === "match") return { main: gameLabel(r.g), lines: [esc(`Round ${gamesById[r.g].round} · Group ${gamesById[r.g].group}`)] };
+  if (b.scope === "object")
+    return { main: r.o, lines: [`${esc(player(r.p))} ${civTag(r.civ)}`, esc(gameLabel(r.g))] };
+  if (b.scope === "player")
+    return { main: player(r.p), lines: [`${esc(team(D.people[r.p].team))} · ${r.n} game${r.n === 1 ? "" : "s"}`, r.d ? esc(r.d) : ""] };
+  return { main: player(r.p), civ: r.civ, lines: [esc(gameLabel(r.g)), r.d ? esc(r.d) : ""] };
 }
 
-const HINTS = { flank: "Mostly a flank stat", pocket: "Mostly a pocket stat" };
 const SCOPES = { game: "One game", player: "All games", object: "One unit or building, one game", match: "Whole game" };
 
 function controls(b, r) {
@@ -289,7 +284,10 @@ function boardCard(b) {
       const result = x.w === undefined ? "" : x.w ? "won" : "lost";
       return `<li class="${i >= ROWS_SHOWN && !open ? "extra" : ""} ${result}">
         <span class="rank">${rank}</span>
-        <span class="who"><span class="main" title="${esc(w.main)}${aliasNote(x.p)}">${esc(w.main)}</span><small>${w.sub}</small></span>
+        <span class="who"><span class="main" title="${esc(w.main)}${aliasNote(x.p)}">${esc(w.main)}${w.civ ? ` ${civTag(w.civ)}` : ""}</span>${w.lines
+          .filter(Boolean)
+          .map((l) => `<small>${l}</small>`)
+          .join("")}</span>
         <span class="val">${value(x.v, b.fmt)}</span>
       </li>`;
     })
@@ -304,10 +302,7 @@ function boardCard(b) {
   const note = side.note ?? b.note;
   const roleWord = { all: "", flank: "flank ", pocket: "pocket " }[r];
   return `<article class="board" id="board-${b.id}" data-id="${b.id}">
-    <div class="board-top">
-      <span class="scope">${SCOPES[b.scope]}</span>
-      ${b.hint ? `<span class="hint">${HINTS[b.hint]}</span>` : ""}
-    </div>
+    <div class="board-top"><span class="scope">${SCOPES[b.scope]}</span></div>
     <h3>${esc(side.title)}</h3>
     ${note ? `<p class="note">${esc(note)}</p>` : ""}
     ${controls(b, r)}
@@ -340,7 +335,7 @@ function showCategory() {
 
 function warCard(b, r) {
   return `<article class="board war" id="board-${b.id}" data-id="${b.id}">
-    <div class="board-top"><span class="scope">One game · per player</span><span class="hint">${HINTS.flank}</span></div>
+    <div class="board-top"><span class="scope">One game · per player</span></div>
     <h3>${esc(b.title)}</h3>
     <p class="note">${esc(b.note)}</p>
     ${controls(b, r)}
