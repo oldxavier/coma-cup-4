@@ -499,7 +499,7 @@ footer {
 }
 
 /* replay page */
-.replay-page { padding-top: clamp(2.5rem, 5vw, 4rem); }
+.replays { border-top: 1px solid var(--line); }
 .replay-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 1rem 2rem; margin-bottom: 1.4rem; }
 .replay-title { font-size: clamp(1.8rem, 3.4vw, 2.8rem); line-height: 1.1; }
 .replay-pick span { display: block; margin-bottom: .35rem; color: var(--muted); font-size: .76rem; }

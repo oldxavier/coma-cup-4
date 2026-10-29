@@ -1,6 +1,9 @@
 // A fast replay of one game on an AoE-style diamond map, from replay/<game>.json: unit positions
 // every ~10 s (drawn moving smoothly in between), buildings from the snapshot they stand in to the
 // one they are gone from, deaths as brief flashes, and the starting forest and mines.
+// It lives in the stats page's Replays section and loads a game only when the section comes into
+// view or a "Watch replay" link (#replay-<game>) is followed, so the page itself stays as fast.
+(() => {
 const COLORS = {
   gameBlue: "#2f6fe0", gameRed: "#e0412f", gameGreen: "#3c9f49", gameYellow: "#e8c22a",
   gameTeal: "#25b3b3", gamePink: "#9d4fd6", gameGrey: "#a5a5a5", gameOrange: "#f08a24",
@@ -11,18 +14,43 @@ const FLASH = 30;                       // seconds of game time a death stays vi
 let S, R, gamesById, speed = 60, playing = false, time = 0, last = null;
 let canvas, ctx, ground, W, H;
 
-fetch("data/cc4.json", { cache: "no-cache" })
-  .then((r) => r.json())
-  .then((data) => {
-    S = data;
-    gamesById = Object.fromEntries(S.games.map((g) => [g.tag, g]));
-    canvas = document.getElementById("map");
-    ctx = canvas.getContext("2d");
-    pickers();
-    window.addEventListener("resize", () => R && (layout(), draw()));
-    window.addEventListener("hashchange", () => open(location.hash.slice(1)));
-    open(location.hash.slice(1) || S.games[0].tag);
-  });
+let started = false;
+const linked = () => (location.hash.startsWith("#replay-") ? location.hash.slice(8) : null);
+
+function start() {
+  if (started) return;
+  started = true;
+  fetch("data/cc4.json", { cache: "no-cache" })
+    .then((r) => r.json())
+    .then((data) => {
+      S = data;
+      gamesById = Object.fromEntries(S.games.map((g) => [g.tag, g]));
+      canvas = document.getElementById("map");
+      ctx = canvas.getContext("2d");
+      pickers();
+      window.addEventListener("resize", () => R && (layout(), draw()));
+      open(linked() || S.games[S.games.length - 1].tag);
+    });
+}
+
+// a "Watch replay" link opens that game; otherwise a game loads when the section comes into view
+window.addEventListener("hashchange", () => {
+  if (!linked()) return;
+  document.getElementById("replays").scrollIntoView({ behavior: "smooth" });
+  S ? open(linked()) : start();          // while loading, start() opens the linked game itself
+});
+if (linked()) start();
+// the stats above are drawn after their data arrives; until then this section sits near the top
+function watchSection() {
+  if (!document.querySelector("#group-tables .group")) return setTimeout(watchSection, 200);
+  new IntersectionObserver((seen, obs) => {
+    if (seen.some((e) => e.isIntersecting)) {
+      start();
+      obs.disconnect();
+    }
+  }).observe(document.getElementById("replays"));
+}
+watchSection();
 
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const team = (k) => (S.teams[k] ? S.teams[k].name : k);
@@ -50,7 +78,7 @@ function pickers() {
       .map((tag) => `<option value="${tag}">G${gamesById[tag].n} · ${esc(team(gamesById[tag].winner))} won</option>`)
       .join("")}</optgroup>`)
     .join("");
-  sel.addEventListener("change", () => (location.hash = sel.value));
+  sel.addEventListener("change", () => open(sel.value));
   const sp = document.getElementById("speed");
   sp.innerHTML = SPEEDS.map(([v, l]) => `<button type="button" data-speed="${v}" aria-pressed="${v === speed}">${l}</button>`).join("");
   sp.addEventListener("click", (e) => {
@@ -90,8 +118,11 @@ function tick(now) {
 
 // ---------------------------------------------------------------- loading a game
 
+let wanted = null;                      // the game last asked for: only it is drawn
+
 function open(tag) {
   if (!gamesById[tag]) tag = S.games[0].tag;
+  wanted = tag;
   pause();
   document.getElementById("game-select").value = tag;
   const g = gamesById[tag];
@@ -99,6 +130,7 @@ function open(tag) {
   fetch(`replay/${tag}.json`)
     .then((r) => r.json())
     .then((data) => {
+      if (tag !== wanted) return;
       R = decode(data, g);
       time = 0;
       const scrub = document.getElementById("scrub");
@@ -285,3 +317,4 @@ function legend(count) {
     el.dataset.html = html;
   }
 }
+})();

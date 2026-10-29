@@ -161,7 +161,7 @@ function seriesRow(s) {
           .join("")}</div>`;
       return `<div class="game">
         <b>G${g.n}</b>
-        <span class="winner">${esc(team(g.winner))} won${g.parts > 1 ? " · restored once" : ""}<a class="watch" href="replay.html#${g.tag}">Watch replay</a></span>
+        <span class="winner">${esc(team(g.winner))} won${g.parts > 1 ? " · restored once" : ""}<a class="watch" href="#replay-${g.tag}">Watch replay</a></span>
         <span class="len">${time(g.length)}</span>
         <div class="civs">${side(g.a)}${side(g.b)}</div>
       </div>`;
