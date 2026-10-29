@@ -221,8 +221,20 @@ function cardClick(e) {
   const id = card.dataset.id;
   if (btn.dataset.act === "role") cardRole[id] = btn.dataset.role;
   if (btn.dataset.act === "side") btn.dataset.side === "least" ? flipped.add(id) : flipped.delete(id);
-  if (btn.dataset.act === "more") cardOpen.has(id) ? cardOpen.delete(id) : cardOpen.add(id);
+  const closing = btn.dataset.act === "more" && cardOpen.has(id);
+  if (btn.dataset.act === "more") closing ? cardOpen.delete(id) : cardOpen.add(id);
   redrawCard(id, btn.dataset.act + (btn.dataset.role || btn.dataset.side || ""));
+  if (closing) backToCard(id);
+}
+
+// after a long list closes, bring the card's top back into view below the category tabs
+function backToCard(id) {
+  const below = document.querySelector(".category-bar").getBoundingClientRect().height + 12;
+  const top = document.getElementById(`board-${id}`).getBoundingClientRect().top;
+  if (top < below) {
+    const smooth = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({ top: window.scrollY + top - below, behavior: smooth ? "smooth" : "auto" });
+  }
 }
 
 function redrawCard(id, focus) {
