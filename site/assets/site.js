@@ -410,7 +410,7 @@ function sortable(tableId, cols, rows, initial, searchId) {
 function playerTable() {
   const roleText = (r) => (r.flank && r.pocket ? `${r.flank} flank, ${r.pocket} pocket` : r.flank ? "Flank" : "Pocket");
   const cols = [
-    { key: "name", label: "Player", cls: "name", text: (r) => `${player(r.p)} ${alias(r.p)}`, sort: (r) => player(r.p).toLowerCase(), asc: true, search: true },
+    { key: "name", label: "Player", cls: "name", text: (r) => `${player(r.p)} ${alias(r.p)}`, html: (r) => esc(player(r.p)), sort: (r) => player(r.p).toLowerCase(), asc: true, search: true },
     { key: "team", label: "Team", cls: "team", text: (r) => team(r.team), sort: (r) => team(r.team).toLowerCase(), asc: true, search: true },
     { key: "role", label: "Role", cls: "team", text: roleText, sort: (r) => r.flank - r.pocket, search: true },
     { key: "games", label: "Games", text: (r) => r.games, sort: (r) => r.games },
