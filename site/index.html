@@ -9,8 +9,8 @@
   <meta property="og:description" content="Standings, records and oddities from Coma Cup 4">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://oldxavier.github.io/coma-cup-4/">
-  <link rel="stylesheet" href="assets/site.css?v=16">
-  <script src="assets/site.js?v=16" defer></script>
+  <link rel="stylesheet" href="assets/site.css?v=17">
+  <script src="assets/site.js?v=17" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -20,7 +20,7 @@
       <div class="nav-links">
         <a href="#groups">Groups</a>
         <a href="#records">Records</a>
-        <a href="#players">Players</a>
+        <a href="#players">Teams & players</a>
         <a href="#civs">Civs</a>
         <a data-link="liquipedia" href="https://liquipedia.net/ageofempires/Coma_Cup/4">Liquipedia</a>
       </div>
@@ -75,11 +75,16 @@
     <section class="section band" id="players" aria-labelledby="players-title">
       <div class="section-heading">
         <div>
-          <p class="section-label">Every player</p>
-          <h2 id="players-title">Players</h2>
+          <p class="section-label">Every team and player</p>
+          <h2 id="players-title">Teams &amp; players</h2>
         </div>
-        <div class="heading-note"><p>Totals and averages over each player's games, or only their flank or pocket games. Age times are averages of the age-up clock; idle TC is Town Center idle time before reaching that age.</p></div>
+        <div class="heading-note"><p>Team figures are the four players' totals per game. Player figures are totals and averages over each player's games, or only their flank or pocket games.</p></div>
       </div>
+      <h3 class="table-title">Teams</h3>
+      <div class="table-shell team-shell">
+        <table class="player-table" id="team-table"><thead></thead><tbody></tbody></table>
+      </div>
+      <h3 class="table-title">Players</h3>
       <div class="leader-controls">
         <label><span>Find a player or team</span><input id="player-search" type="search" placeholder="e.g. Juyhou" autocomplete="off"></label>
         <div><span class="control-label">Games played as</span><div class="scope-switch role-switch" role="group" aria-label="Player role"></div></div>

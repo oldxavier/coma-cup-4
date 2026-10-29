@@ -16,6 +16,7 @@ fetch("data/cc4.json", { cache: "no-cache" })
     groups();
     roleSwitches();
     categories();
+    teamTable();
     playerTable();
     civTable();
   })
@@ -244,6 +245,7 @@ function redrawCard(id, focus) {
   box.innerHTML = boardCard(b);
   old.replaceWith(box.firstElementChild);
   if (b.scope === "war") warTable();
+  if (b.scope === "units") unitsTable();
   const target = [...document.querySelectorAll(`#board-${id} button[data-act]`)].find(
     (x) => x.dataset.act + (x.dataset.role || x.dataset.side || "") === focus
   );
@@ -278,6 +280,7 @@ function controls(b, r) {
 function boardCard(b) {
   const r = cardRole[b.id] || "all";
   if (b.scope === "war") return warCard(b, r);
+  if (b.scope === "units") return unitsCard(b, r);
   const least = flipped.has(b.id) && b.least;
   const side = least ? b.least : b;
   const rows = side.rows[r] || [];
@@ -293,7 +296,7 @@ function boardCard(b) {
           .filter(Boolean)
           .map((l) => `<small>${l}</small>`)
           .join("")}</span>
-        <span class="val">${value(x.v, b.fmt)}</span>
+        <span class="val">${x.txt ? esc(x.txt) : value(x.v, b.fmt)}</span>
       </li>`;
     })
     .join("");
@@ -326,14 +329,22 @@ function showCategory() {
   const boards = D.boards.list.filter((b) => b.cat === category);
   const main = boards.filter((b) => !b.minor), minor = boards.filter((b) => b.minor);
   const el = document.getElementById("boards");
+  let group = null;
   el.innerHTML =
-    main.map(boardCard).join("") +
+    main
+      .map((b) => {
+        const head = b.group && b.group !== group ? `<h3 class="board-group">${esc(b.group)}</h3>` : "";
+        group = b.group;
+        return head + boardCard(b);
+      })
+      .join("") +
     (minor.length
       ? `<details class="minor"><summary>More: ${minor.map((b) => esc(b.title.replace(/^Most /, ""))).join(", ")}</summary><div class="board-grid">${minor
           .map(boardCard)
           .join("")}</div></details>`
       : "");
   if (el.querySelector("#war-table")) warTable();
+  if (el.querySelector("#units-table")) unitsTable();
 }
 
 // ---------------------------------------------------------------- Dark Age villager war
@@ -361,6 +372,28 @@ function warTable() {
     { key: "econ", label: "Balance", text: (r) => signed(r.econ), sort: (r) => r.econ, tone: (r) => r.econ, title: D.meta.balance_note },
   ];
   sortable("war-table", cols, rows, "econ");
+}
+
+// ---------------------------------------------------------------- units made
+
+function unitsCard(b, r) {
+  return `<article class="board war" id="board-${b.id}" data-id="${b.id}">
+    <div class="board-top"><span class="scope">All games · by unit line</span></div>
+    <h3>${esc(b.title)}</h3>
+    ${controls(b, r)}
+    <div class="table-shell war-shell"><table class="war-table" id="units-table"><thead></thead><tbody></tbody></table></div>
+  </article>`;
+}
+
+function unitsTable() {
+  const cols = [
+    { key: "unit", label: "Unit", cls: "name", text: (r) => r.unit, sort: (r) => r.unit, asc: true },
+    { key: "made", label: "Made", text: (r) => value(r.made), sort: (r) => r.made },
+    { key: "players", label: "Players", text: (r) => r.players, sort: (r) => r.players },
+    { key: "top", label: "Made most", cls: "team", text: (r) => player(r.top), sort: (r) => player(r.top).toLowerCase(), asc: true },
+    { key: "top_n", label: "Their count", text: (r) => value(r.top_n), sort: (r) => r.top_n },
+  ];
+  sortable("units-table", cols, D.units[cardRole.units_made || "all"], "made");
 }
 
 // ---------------------------------------------------------------- tables
@@ -433,6 +466,25 @@ function playerTable() {
   ];
   const update = sortable("player-table", cols, D.players[role], "kills", "player-search");
   refresh.push(() => update(D.players[role]));
+}
+
+function teamTable() {
+  const per = (k) => ({ text: (r) => value(r[k]), sort: (r) => r[k] });
+  const cols = [
+    { key: "team", label: "Team", cls: "name", text: (r) => team(r.team), sort: (r) => team(r.team).toLowerCase(), asc: true },
+    { key: "group", label: "Group", cls: "team", text: (r) => D.teams[r.team].group, sort: (r) => D.teams[r.team].group, asc: true },
+    { key: "games", label: "Games", text: (r) => r.games, sort: (r) => r.games },
+    { key: "wins", label: "Won", text: (r) => r.wins, sort: (r) => r.wins },
+    { key: "unit_kills", label: "Kills", ...per("unit_kills") },
+    { key: "eco_kills", label: "Eco kills", ...per("eco_kills") },
+    { key: "building_razes", label: "Razed", ...per("building_razes") },
+    { key: "total_collected_res", label: "Resources", ...per("total_collected_res") },
+    { key: "trade_profit", label: "Trade profit", ...per("trade_profit") },
+    { key: "walls", label: "Wall pieces", ...per("walls") },
+    { key: "towers", label: "Towers", ...per("towers") },
+    { key: "castles", label: "Castles", ...per("castles") },
+  ];
+  sortable("team-table", cols, D.team_rows, "wins");
 }
 
 function civTable() {
