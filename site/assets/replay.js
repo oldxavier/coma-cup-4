@@ -233,15 +233,22 @@ function draw() {
     }
   }
 
-  for (const [t, x, y] of R.deaths) {
+  // a death: a widening ring in the colour of the player who lost the unit
+  for (const [t, x, y, pid] of R.deaths) {
     if (t > time || t < time - FLASH) continue;
     const fade = 1 - (time - t) / FLASH;
     const [sx, sy] = at(x + 0.5, y + 0.5);
-    ctx.strokeStyle = `rgba(150,20,10,${0.85 * fade})`;
-    ctx.lineWidth = 1.2;
+    const r = 2 + (1 - fade) * 4;
+    ctx.globalAlpha = 0.9 * fade;
     ctx.beginPath();
-    ctx.arc(sx, sy, 2 + (1 - fade) * 4, 0, Math.PI * 2);
+    ctx.arc(sx, sy, r, 0, Math.PI * 2);
+    ctx.strokeStyle = "rgba(20,25,20,.8)";
+    ctx.lineWidth = 2.4;
     ctx.stroke();
+    ctx.strokeStyle = color(pid);
+    ctx.lineWidth = 1.3;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
   }
 
   document.getElementById("clock").textContent = `${clock(time)} / ${clock(R.end)}`;
@@ -274,7 +281,7 @@ function legend(count) {
     .join("");
   const el = document.getElementById("legend");
   if (el.dataset.html !== html) {
-    el.innerHTML = html + `<p class="legend-note">Units on the map right now. Dots are units, larger ringed dots army; squares are buildings; red rings are deaths.</p>`;
+    el.innerHTML = html + `<p class="legend-note">Units on the map right now. Dots are units, larger ringed dots army; squares are buildings; rings are units dying, in the colour of the player who lost them.</p>`;
     el.dataset.html = html;
   }
 }
