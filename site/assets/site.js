@@ -2,9 +2,9 @@
 const ROWS_SHOWN = 5;
 const ROLES = [["all", "All"], ["flank", "Flank"], ["pocket", "Pocket"]];
 
-let D, gamesById, category, role = "all";
+let D, gamesById, category, role = "all";   // role: the players table's filter
 const flipped = new Set();          // boards showing their "least" side
-const refresh = [];                 // redraws that depend on the role filter
+const refresh = [];                 // redraws that depend on the players table's role
 
 fetch("data/cc4.json")
   .then((r) => r.json())
@@ -183,23 +183,25 @@ function seriesList() {
     .join("");
 }
 
-// ---------------------------------------------------------------- role filter
+// ---------------------------------------------------------------- role filter (players table)
 
 function roleSwitches() {
-  const els = document.querySelectorAll(".role-switch");
-  els.forEach((el) => {
-    el.innerHTML = ROLES.map(([k, l]) => `<button type="button" data-role="${k}" aria-pressed="${k === role}">${l}</button>`).join("");
-    el.addEventListener("click", (e) => {
-      const btn = e.target.closest("button");
-      if (!btn) return;
-      role = btn.dataset.role;
-      els.forEach((x) => x.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", b.dataset.role === role)));
-      refresh.forEach((f) => f());
-    });
+  const el = document.querySelector("#players .role-switch");
+  el.innerHTML = ROLES.map(([k, l]) => `<button type="button" data-role="${k}" aria-pressed="${k === role}">${l}</button>`).join("");
+  el.addEventListener("click", (e) => {
+    const btn = e.target.closest("button");
+    if (!btn) return;
+    role = btn.dataset.role;
+    el.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", b.dataset.role === role));
+    refresh.forEach((f) => f());
   });
 }
 
 // ---------------------------------------------------------------- records
+
+// each card keeps its own role and its own top / bottom choice
+const cardRole = {};
+const cardOpen = new Set();
 
 function categories() {
   const sw = document.getElementById("category-switch");
@@ -214,18 +216,42 @@ function categories() {
     category = btn.dataset.cat;
     showCategory();
   });
+  document.getElementById("boards").addEventListener("click", cardClick);
   category = cats[0].id;
-  refresh.push(showCategory);
   showCategory();
+}
+
+function cardClick(e) {
+  const btn = e.target.closest("button[data-act]");
+  const card = btn && btn.closest(".board");
+  if (!card) return;
+  const id = card.dataset.id;
+  if (btn.dataset.act === "role") cardRole[id] = btn.dataset.role;
+  if (btn.dataset.act === "side") btn.dataset.side === "least" ? flipped.add(id) : flipped.delete(id);
+  if (btn.dataset.act === "more") cardOpen.has(id) ? cardOpen.delete(id) : cardOpen.add(id);
+  redrawCard(id, btn.dataset.act + (btn.dataset.role || btn.dataset.side || ""));
+}
+
+function redrawCard(id, focus) {
+  const old = document.getElementById(`board-${id}`);
+  const b = D.boards.list.find((x) => x.id === id);
+  const box = document.createElement("div");
+  box.innerHTML = boardCard(b);
+  old.replaceWith(box.firstElementChild);
+  if (b.scope === "war") warTable();
+  const target = [...document.querySelectorAll(`#board-${id} button[data-act]`)].find(
+    (x) => x.dataset.act + (x.dataset.role || x.dataset.side || "") === focus
+  );
+  if (target) target.focus();
 }
 
 function who(b, r) {
   if (b.scope === "match") return { main: gameLabel(r.g), sub: esc(`Round ${gamesById[r.g].round} · Group ${gamesById[r.g].group}`) };
   if (b.scope === "object") return { main: r.o, sub: `${esc(player(r.p))} · ${civTag(r.civ)} · ${esc(gameLabel(r.g))}` };
   if (b.scope === "player") {
-    const bits = [esc(team(D.people[r.p].team))];
+    const bits = [];
     if (r.d) bits.push(esc(r.d));
-    bits.push(`${r.n} game${r.n === 1 ? "" : "s"}`);
+    bits.push(esc(team(D.people[r.p].team)), `${r.n} game${r.n === 1 ? "" : "s"}`);
     return { main: player(r.p), sub: bits.join(" · ") };
   }
   const bits = [civTag(r.civ), esc(gameLabel(r.g))];
@@ -236,42 +262,60 @@ function who(b, r) {
 const HINTS = { flank: "Mostly a flank stat", pocket: "Mostly a pocket stat" };
 const SCOPES = { game: "One game", player: "All games", object: "One unit or building, one game", match: "Whole game" };
 
+function controls(b, r) {
+  const roles = b.scope === "match" ? "" : `<span class="seg" role="group" aria-label="Player role">${ROLES.map(
+    ([k, l]) => `<button type="button" data-act="role" data-role="${k}" aria-pressed="${k === r}">${l}</button>`
+  ).join("")}</span>`;
+  const least = flipped.has(b.id);
+  const sides = b.least
+    ? `<span class="seg" role="group" aria-label="Order">${[["top", b.label, !least], ["least", b.least.label, least]]
+        .map(([k, l, on]) => `<button type="button" data-act="side" data-side="${k}" aria-pressed="${on}">${esc(l)}</button>`)
+        .join("")}</span>`
+    : "";
+  return roles || sides ? `<div class="card-controls">${roles}${sides}</div>` : "";
+}
+
 function boardCard(b) {
-  if (b.scope === "war") return warCard(b);
+  const r = cardRole[b.id] || "all";
+  if (b.scope === "war") return warCard(b, r);
   const least = flipped.has(b.id) && b.least;
   const side = least ? b.least : b;
-  const rows = side.rows[role] || [];
+  const rows = side.rows[r] || [];
+  const open = cardOpen.has(b.id);
   const items = rows
-    .map((r, i) => {
-      const w = who(b, r);
-      const rank = rows.findIndex((x) => x.v === r.v) + 1;      // ties share a rank
-      const result = r.w === undefined ? "" : r.w ? "won" : "lost";
-      return `<li class="${i >= ROWS_SHOWN ? "extra" : ""} ${result}">
+    .map((x, i) => {
+      const w = who(b, x);
+      const rank = rows.findIndex((y) => y.v === x.v) + 1;      // ties share a rank
+      const result = x.w === undefined ? "" : x.w ? "won" : "lost";
+      return `<li class="${i >= ROWS_SHOWN && !open ? "extra" : ""} ${result}">
         <span class="rank">${rank}</span>
-        <span class="who"><span class="main" title="${esc(w.main)}${aliasNote(r.p)}">${esc(w.main)}</span><small title="${esc(w.sub.replace(/<[^>]+>/g, ""))}">${w.sub}</small></span>
-        <span class="val">${value(r.v, b.fmt)}</span>
+        <span class="who"><span class="main" title="${esc(w.main)}${aliasNote(x.p)}">${esc(w.main)}</span><small>${w.sub}</small></span>
+        <span class="val">${value(x.v, b.fmt)}</span>
       </li>`;
     })
     .join("");
   // shown only once someone has actually skipped it
-  const skipped = (b.never || []).filter((r) => role === "all" || r.role === role);
+  const skipped = (b.never || []).filter((x) => r === "all" || x.role === r);
   const never = skipped.length
     ? `<div class="never"><b>${esc(b.never_title)}</b><ul>${skipped
-        .map((r) => `<li>${esc(player(r.p))} <small>${civTag(r.civ)} · ${esc(gameLabel(r.g))}</small></li>`)
+        .map((x) => `<li>${esc(player(x.p))} <small>${civTag(x.civ)} · ${esc(gameLabel(x.g))}</small></li>`)
         .join("")}</ul></div>`
     : "";
   const note = side.note ?? b.note;
+  const roleWord = { all: "", flank: "flank ", pocket: "pocket " }[r];
   return `<article class="board" id="board-${b.id}" data-id="${b.id}">
     <div class="board-top">
       <span class="scope">${SCOPES[b.scope]}</span>
       ${b.hint ? `<span class="hint">${HINTS[b.hint]}</span>` : ""}
     </div>
-    <h3 title="${esc(side.title)}">${esc(side.title)}</h3>
-    <div class="flip-slot">${b.least ? `<button type="button" class="flip" aria-pressed="${!!least}">⇅ ${esc(least ? b.title : b.least.title)}</button>` : ""}</div>
-    <p class="note" title="${esc(note || "")}">${esc(note || "")}</p>
+    <h3>${esc(side.title)}</h3>
+    ${note ? `<p class="note">${esc(note)}</p>` : ""}
+    ${controls(b, r)}
     ${never}
-    ${rows.length ? `<ol>${items}</ol>` : `<p class="empty">No ${role} games yet.</p>`}
-    <div class="more-slot">${rows.length > ROWS_SHOWN ? `<button type="button" class="more" aria-expanded="false">Show top ${rows.length}</button>` : ""}</div>
+    ${rows.length ? `<ol>${items}</ol>` : `<p class="empty">No ${roleWord}games yet.</p>`}
+    ${rows.length > ROWS_SHOWN
+      ? `<button type="button" class="more" data-act="more" aria-expanded="${open}">${open ? "Show top 5" : `Show top ${rows.length}`}</button>`
+      : ""}
   </article>`;
 }
 
@@ -289,38 +333,24 @@ function showCategory() {
           .map(boardCard)
           .join("")}</div></details>`
       : "");
-  el.querySelectorAll(".more").forEach((btn) =>
-    btn.addEventListener("click", () => {
-      const card = btn.closest(".board");
-      const open = card.classList.toggle("open");
-      btn.setAttribute("aria-expanded", open);
-      btn.textContent = open ? "Show top 5" : `Show top ${card.querySelectorAll("ol > li").length}`;
-    })
-  );
-  el.querySelectorAll(".flip").forEach((btn) =>
-    btn.addEventListener("click", () => {
-      const id = btn.closest(".board").dataset.id;
-      flipped.has(id) ? flipped.delete(id) : flipped.add(id);
-      showCategory();
-      document.querySelector(`#board-${id} .flip`).focus();
-    })
-  );
   if (el.querySelector("#war-table")) warTable();
 }
 
 // ---------------------------------------------------------------- Dark Age villager war
 
-function warCard(b) {
-  return `<article class="board war" id="board-${b.id}">
+function warCard(b, r) {
+  return `<article class="board war" id="board-${b.id}" data-id="${b.id}">
     <div class="board-top"><span class="scope">One game · per player</span><span class="hint">${HINTS.flank}</span></div>
     <h3>${esc(b.title)}</h3>
     <p class="note">${esc(b.note)}</p>
+    ${controls(b, r)}
     <div class="table-shell war-shell"><table class="war-table" id="war-table"><thead></thead><tbody></tbody></table></div>
   </article>`;
 }
 
 function warTable() {
-  const rows = D.war.filter((r) => role === "all" || r.role === role);
+  const r = cardRole.dark_age_war || "all";
+  const rows = D.war.filter((x) => r === "all" || x.role === r);
   const cols = [
     { key: "name", label: "Player", cls: "name", html: (r) => `<span title="${esc(player(r.p))}${aliasNote(r.p)}">${esc(player(r.p))}</span><small>${civTag(r.civ)} · ${esc(gameLabel(r.g))}</small>`, sort: (r) => player(r.p).toLowerCase(), asc: true },
     { key: "vs", label: "Against", cls: "team", html: (r) => r.vs.map((p) => esc(player(p))).join(", "), sort: (r) => player(r.vs[0]).toLowerCase(), asc: true },
