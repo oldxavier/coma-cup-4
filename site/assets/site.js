@@ -31,6 +31,9 @@ fetch("data/cc4.json")
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const team = (k) => (D.teams[k] ? D.teams[k].name : k);
 const player = (id) => (D.people[id] ? D.people[id].name : id);
+// the in-game name, where it differs from the Liquipedia name shown
+const alias = (id) => (D.people[id] && D.people[id].ingame !== D.people[id].name ? D.people[id].ingame : "");
+const aliasNote = (id) => (alias(id) ? ` (in game: ${esc(alias(id))})` : "");
 
 function emblem(civ) {
   const src = D.emblems[civ];
@@ -158,7 +161,7 @@ function seriesList() {
           const g = gamesById[tag];
           const side = (t) =>
             `<div class="lineup ${g.winner === t ? "w" : ""}"><b>${esc(team(t))}</b>${g.teams[t]
-              .map((p) => `<span title="${esc(player(p.p))}, ${p.role}">${emblem(p.civ)}${esc(p.civ)}</span>`)
+              .map((p) => `<span title="${esc(player(p.p))}${aliasNote(p.p)}, ${p.role}">${emblem(p.civ)}${esc(p.civ)}</span>`)
               .join("")}</div>`;
           return `<div class="game">
             <b>G${g.n}</b>
@@ -242,40 +245,40 @@ function boardCard(b) {
     .map((r, i) => {
       const w = who(b, r);
       const rank = rows.findIndex((x) => x.v === r.v) + 1;      // ties share a rank
-      return `<li class="${i >= ROWS_SHOWN ? "extra" : ""}">
+      const result = r.w === undefined ? "" : r.w ? "won" : "lost";
+      return `<li class="${i >= ROWS_SHOWN ? "extra" : ""} ${result}">
         <span class="rank">${rank}</span>
-        <span class="who">${esc(w.main)}<small>${w.sub}</small></span>
+        <span class="who"><span class="main" title="${esc(w.main)}${aliasNote(r.p)}">${esc(w.main)}</span><small title="${esc(w.sub.replace(/<[^>]+>/g, ""))}">${w.sub}</small></span>
         <span class="val">${value(r.v, b.fmt)}</span>
       </li>`;
     })
     .join("");
-  let never = "";
-  if (b.never) {
-    const list = b.never.filter((r) => role === "all" || r.role === role);
-    never = `<div class="never"><b>${esc(b.never_title)}</b>${
-      list.length
-        ? `<ul>${list.map((r) => `<li>${esc(player(r.p))} <small>${civTag(r.civ)} · ${esc(gameLabel(r.g))}</small></li>`).join("")}</ul>`
-        : `<p>${esc(b.never_none)}</p>`
-    }</div>`;
-  }
+  // shown only once someone has actually skipped it
+  const skipped = (b.never || []).filter((r) => role === "all" || r.role === role);
+  const never = skipped.length
+    ? `<div class="never"><b>${esc(b.never_title)}</b><ul>${skipped
+        .map((r) => `<li>${esc(player(r.p))} <small>${civTag(r.civ)} · ${esc(gameLabel(r.g))}</small></li>`)
+        .join("")}</ul></div>`
+    : "";
   const note = side.note ?? b.note;
   return `<article class="board" id="board-${b.id}" data-id="${b.id}">
     <div class="board-top">
       <span class="scope">${SCOPES[b.scope]}</span>
       ${b.hint ? `<span class="hint">${HINTS[b.hint]}</span>` : ""}
     </div>
-    <h3>${esc(side.title)}</h3>
-    ${b.least ? `<button type="button" class="flip" aria-pressed="${!!least}">⇅ ${esc(least ? b.title : b.least.title)}</button>` : ""}
-    ${note ? `<p class="note">${esc(note)}</p>` : ""}
+    <h3 title="${esc(side.title)}">${esc(side.title)}</h3>
+    <div class="flip-slot">${b.least ? `<button type="button" class="flip" aria-pressed="${!!least}">⇅ ${esc(least ? b.title : b.least.title)}</button>` : ""}</div>
+    <p class="note" title="${esc(note || "")}">${esc(note || "")}</p>
     ${never}
-    ${rows.length ? `<ol>${items}</ol>` : `<p class="note">No ${role} games yet.</p>`}
-    ${rows.length > ROWS_SHOWN ? `<button type="button" class="more" aria-expanded="false">Show top ${rows.length}</button>` : ""}
+    ${rows.length ? `<ol>${items}</ol>` : `<p class="empty">No ${role} games yet.</p>`}
+    <div class="more-slot">${rows.length > ROWS_SHOWN ? `<button type="button" class="more" aria-expanded="false">Show top ${rows.length}</button>` : ""}</div>
   </article>`;
 }
 
 function showCategory() {
   const cat = D.boards.categories.find((c) => c.id === category);
-  document.getElementById("category-blurb").textContent = cat.blurb;
+  document.getElementById("category-blurb").innerHTML =
+    `${esc(cat.blurb)} <span class="legend"><i class="won"></i>team won that game <i class="lost"></i>lost</span>`;
   const boards = D.boards.list.filter((b) => b.cat === category);
   const main = boards.filter((b) => !b.minor), minor = boards.filter((b) => b.minor);
   const el = document.getElementById("boards");
@@ -319,7 +322,7 @@ function warCard(b) {
 function warTable() {
   const rows = D.war.filter((r) => role === "all" || r.role === role);
   const cols = [
-    { key: "name", label: "Player", cls: "name", html: (r) => `${esc(player(r.p))}<small>${civTag(r.civ)} · ${esc(gameLabel(r.g))}</small>`, sort: (r) => player(r.p).toLowerCase(), asc: true },
+    { key: "name", label: "Player", cls: "name", html: (r) => `<span title="${esc(player(r.p))}${aliasNote(r.p)}">${esc(player(r.p))}</span><small>${civTag(r.civ)} · ${esc(gameLabel(r.g))}</small>`, sort: (r) => player(r.p).toLowerCase(), asc: true },
     { key: "vs", label: "Against", cls: "team", html: (r) => r.vs.map((p) => esc(player(p))).join(", "), sort: (r) => player(r.vs[0]).toLowerCase(), asc: true },
     { key: "killed", label: "Killed", text: (r) => r.killed, sort: (r) => r.killed },
     { key: "lost", label: "Lost", text: (r) => r.lost, sort: (r) => r.lost },
@@ -356,7 +359,7 @@ function sortable(tableId, cols, rows, initial, searchId) {
       th.setAttribute("aria-sort", th.dataset.key === key ? (dir > 0 ? "ascending" : "descending") : "none")
     );
     table.querySelector("tbody").innerHTML = shown.length
-      ? shown.map((r) => "<tr>" + cols.map((c) => cell(c, r)).join("") + "</tr>").join("")
+      ? shown.map((r) => `<tr class="${r.w === undefined ? "" : r.w ? "won" : "lost"}">` + cols.map((c) => cell(c, r)).join("") + "</tr>").join("")
       : `<tr><td class="loading" colspan="${cols.length}">Nothing matches.</td></tr>`;
   }
   table.querySelector("thead").onclick = (e) => {
@@ -382,7 +385,7 @@ function sortable(tableId, cols, rows, initial, searchId) {
 function playerTable() {
   const roleText = (r) => (r.flank && r.pocket ? `${r.flank} flank, ${r.pocket} pocket` : r.flank ? "Flank" : "Pocket");
   const cols = [
-    { key: "name", label: "Player", cls: "name", text: (r) => player(r.p), sort: (r) => player(r.p).toLowerCase(), asc: true, search: true },
+    { key: "name", label: "Player", cls: "name", text: (r) => `${player(r.p)} ${alias(r.p)}`, html: (r) => `${esc(player(r.p))}${alias(r.p) ? `<small>in game: ${esc(alias(r.p))}</small>` : ""}`, sort: (r) => player(r.p).toLowerCase(), asc: true, search: true },
     { key: "team", label: "Team", cls: "team", text: (r) => team(r.team), sort: (r) => team(r.team).toLowerCase(), asc: true, search: true },
     { key: "role", label: "Role", cls: "team", text: roleText, sort: (r) => r.flank - r.pocket, search: true },
     { key: "games", label: "Games", text: (r) => r.games, sort: (r) => r.games },
