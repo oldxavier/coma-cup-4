@@ -13,7 +13,6 @@ fetch("data/cc4.json", { cache: "no-cache" })
     gamesById = Object.fromEntries(D.games.map((g) => [g.tag, g]));
     links();
     summary();
-    latest();
     groups();
     seriesList();
     roleSwitches();
@@ -91,22 +90,6 @@ function summary() {
   document.getElementById("summary").innerHTML = cells
     .map(([v, l]) => `<div><strong>${esc(v)}</strong><span>${esc(l)}</span></div>`)
     .join("");
-}
-
-function latest() {
-  const round = Math.max(...D.series.map((s) => s.round));
-  document.getElementById("latest-results").innerHTML =
-    `<p class="latest-round">Round ${round}</p>` +
-    D.series
-      .filter((s) => s.round === round)
-      .map(
-        (s) => `<div class="latest-row">
-          <span class="team ${s.winner && s.winner !== s.a ? "lost" : ""}">${esc(team(s.a))}</span>
-          <span class="score">${s.score[0]}–${s.score[1]}</span>
-          <span class="team ${s.winner && s.winner !== s.b ? "lost" : ""}">${esc(team(s.b))}</span>
-        </div>`
-      )
-      .join("");
 }
 
 // ---------------------------------------------------------------- groups and results
