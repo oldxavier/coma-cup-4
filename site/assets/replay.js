@@ -313,7 +313,7 @@ function legend(count) {
     .join("");
   const el = document.getElementById("legend");
   if (el.dataset.html !== html) {
-    el.innerHTML = html + `<p class="legend-note">Units on the map right now. Dots are units, larger ringed dots army; squares are buildings; rings are units dying, in the colour of the player who lost them.</p>`;
+    el.innerHTML = html;
     el.dataset.html = html;
   }
 }

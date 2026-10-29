@@ -536,12 +536,10 @@ footer {
 .legend-team li i { width: 12px; height: 12px; border-radius: 3px; }
 .legend-team li small { display: flex; align-items: center; gap: .3rem; color: var(--muted); font-size: .72rem; }
 .legend-team li b { color: var(--green); font: 500 .82rem var(--mono); }
-.legend-note { margin: 0; color: var(--muted); font-size: .74rem; line-height: 1.45; }
 .watch { margin-left: .6rem; font-size: .76rem; font-weight: 400; }
 @media (max-width: 860px) {
   .replay-layout { grid-template-columns: 1fr; }
   .replay-legend { grid-template-columns: 1fr 1fr; }
-  .legend-note { grid-column: 1 / -1; }
 }
 @media (max-width: 520px) {
   .replay-legend { grid-template-columns: 1fr; }
