@@ -14,7 +14,6 @@ fetch("data/cc4.json", { cache: "no-cache" })
     links();
     summary();
     groups();
-    seriesList();
     roleSwitches();
     categories();
     playerTable();
@@ -117,7 +116,8 @@ function groups() {
                 if (a === b) return `<td class="self" aria-label="same team"></td>`;
                 const s = grid[`${a}|${b}`];
                 if (!s) return `<td class="todo">–</td>`;
-                return `<td class="${s[0] > s[1] ? "won" : "lost"}">${s[0]}–${s[1]}</td>`;
+                const id = D.series.find((x) => (x.a === a && x.b === b) || (x.a === b && x.b === a)).id;
+                return `<td class="${s[0] > s[1] ? "won" : "lost"}"><a href="#series-${id}" data-series="${id}">${s[0]}–${s[1]}</a></td>`;
               })
               .join("")}</tr>`
           )
@@ -130,40 +130,50 @@ function groups() {
         </table>
         <p class="advance-note"><i></i>Top ${D.meta.advance} advance to the playoffs</p>
         ${cross}
+        <div class="group-series">${D.series
+          .filter((x) => x.group === g)
+          .sort((x, y) => y.round - x.round)
+          .map(seriesRow)
+          .join("")}</div>
       </div>`;
     })
     .join("");
+  // a score in the grid opens that series below it
+  document.getElementById("group-tables").addEventListener("click", (e) => {
+    const a = e.target.closest("a[data-series]");
+    if (!a) return;
+    e.preventDefault();
+    const row = document.getElementById(`series-${a.dataset.series}`);
+    row.open = true;
+    row.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  });
 }
 
-function seriesList() {
-  const list = [...D.series].sort((x, y) => y.round - x.round || x.group.localeCompare(y.group));
-  document.getElementById("series-list").innerHTML = list
-    .map((s) => {
-      const games = s.games
-        .map((tag) => {
-          const g = gamesById[tag];
-          const side = (t) =>
-            `<div class="lineup ${g.winner === t ? "w" : ""}"><b>${esc(team(t))}</b>${g.teams[t]
-              .map((p) => `<span title="${esc(player(p.p))}${aliasNote(p.p)}, ${p.role}">${emblem(p.civ)}${esc(p.civ)}</span>`)
-              .join("")}</div>`;
-          return `<div class="game">
-            <b>G${g.n}</b>
-            <span class="winner">${esc(team(g.winner))} won${g.parts > 1 ? " · restored once" : ""}</span>
-            <span class="len">${time(g.length)}</span>
-            <div class="civs">${side(g.a)}${side(g.b)}</div>
-          </div>`;
-        })
-        .join("");
-      const [wa, wb] = s.score;
-      return `<article class="series">
-        <header>
-          <b><span class="${s.winner === s.b ? "lost" : ""}">${esc(team(s.a))}</span> ${wa}–${wb} <span class="${s.winner === s.a ? "lost" : ""}">${esc(team(s.b))}</span></b>
-          <span>Round ${s.round} · Group ${s.group}</span>
-        </header>
-        ${games}
-      </article>`;
+// one series: a single line until opened, then each game with its civs
+function seriesRow(s) {
+  const games = s.games
+    .map((tag) => {
+      const g = gamesById[tag];
+      const side = (t) =>
+        `<div class="lineup ${g.winner === t ? "w" : ""}"><b>${esc(team(t))}</b>${g.teams[t]
+          .map((p) => `<span title="${esc(player(p.p))}${aliasNote(p.p)}, ${p.role}">${emblem(p.civ)}${esc(p.civ)}</span>`)
+          .join("")}</div>`;
+      return `<div class="game">
+        <b>G${g.n}</b>
+        <span class="winner">${esc(team(g.winner))} won${g.parts > 1 ? " · restored once" : ""}</span>
+        <span class="len">${time(g.length)}</span>
+        <div class="civs">${side(g.a)}${side(g.b)}</div>
+      </div>`;
     })
     .join("");
+  const [wa, wb] = s.score;
+  return `<details class="series" id="series-${s.id}">
+    <summary>
+      <b><span class="${s.winner === s.b ? "lost" : ""}">${esc(team(s.a))}</span> ${wa}–${wb} <span class="${s.winner === s.a ? "lost" : ""}">${esc(team(s.b))}</span></b>
+      <span>Round ${s.round}</span>
+    </summary>
+    ${games}
+  </details>`;
 }
 
 // ---------------------------------------------------------------- role filter (players table)
