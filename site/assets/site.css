@@ -340,8 +340,8 @@ details.minor > .board-grid { margin-top: .4rem; }
   padding: .5rem .3rem .5rem .45rem;
   border-top: 1px solid #ebeae4;
 }
-.board li.won { box-shadow: inset 3px 0 0 #7fa58d; background: linear-gradient(90deg, rgba(49, 95, 73, .07), transparent 55%); }
-.board li.lost { box-shadow: inset 3px 0 0 #d4a49c; background: linear-gradient(90deg, rgba(166, 73, 63, .06), transparent 55%); }
+.board li.won { box-shadow: inset 3px 0 0 #7fa58d; }
+.board li.lost { box-shadow: inset 3px 0 0 #d4a49c; }
 .legend { margin-left: .6rem; color: var(--muted); font-size: .76rem; white-space: nowrap; }
 .legend i { display: inline-block; width: 3px; height: .9rem; margin: 0 .3rem 0 .5rem; vertical-align: -.15rem; }
 .legend i.won { background: #7fa58d; }
