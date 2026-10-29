@@ -339,7 +339,6 @@ function warCard(b, r) {
   return `<article class="board war" id="board-${b.id}" data-id="${b.id}">
     <div class="board-top"><span class="scope">One game · per player</span></div>
     <h3>${esc(b.title)}</h3>
-    <p class="note">${esc(b.note)}</p>
     ${controls(b, r)}
     <div class="table-shell war-shell"><table class="war-table" id="war-table"><thead></thead><tbody></tbody></table></div>
   </article>`;
@@ -356,9 +355,9 @@ function warTable() {
     { key: "net", label: "Net", text: (r) => signed(r.net), sort: (r) => r.net * 1000 + r.killed + r.lost, tone: (r) => r.net },
     { key: "idle", label: "Idle TC", text: (r) => time(r.idle), sort: (r) => r.idle, asc: true },
     { key: "opp", label: "Their idle TC", text: (r) => time(r.opp_idle), sort: (r) => r.opp_idle },
-    { key: "econ", label: "Balance", text: (r) => signed(r.econ), sort: (r) => r.econ, tone: (r) => r.econ, title: `Net villagers plus the idle TC difference at ${D.meta.villager_seconds} s a villager` },
+    { key: "econ", label: "Balance", text: (r) => signed(r.econ), sort: (r) => r.econ, tone: (r) => r.econ, title: D.meta.balance_note },
   ];
-  sortable("war-table", cols, rows, "net");
+  sortable("war-table", cols, rows, "econ");
 }
 
 // ---------------------------------------------------------------- tables
