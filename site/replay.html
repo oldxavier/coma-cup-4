@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Coma Cup 4 Replays</title>
+  <meta name="description" content="Every Coma Cup 4 game as a fast replay: units, buildings and fights on the map">
+  <meta property="og:title" content="Coma Cup 4 Replays">
+  <meta property="og:description" content="Every Coma Cup 4 game as a fast replay: units, buildings and fights on the map">
+  <meta property="og:type" content="website">
+  <link rel="stylesheet" href="assets/site.css?v=18">
+  <script src="assets/replay.js?v=18" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header" id="top">
+    <nav aria-label="Primary">
+      <a class="brand" href="./"><span>CC4</span> Coma Cup 4 Stats</a>
+      <div class="nav-links">
+        <a href="./#groups">Groups</a>
+        <a href="./#records">Records</a>
+        <a href="./#players">Teams &amp; players</a>
+        <a href="replay.html" aria-current="page">Replays</a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="main" class="section replay-page">
+    <div class="replay-head">
+      <div>
+        <p class="section-label">Replays</p>
+        <h1 class="replay-title" id="replay-title">Loading…</h1>
+      </div>
+      <label class="replay-pick"><span>Game</span><select id="game-select"></select></label>
+    </div>
+
+    <div class="replay-layout">
+      <div class="replay-stage">
+        <canvas id="map" aria-label="Animated map of the game"></canvas>
+        <div class="replay-controls">
+          <button type="button" class="button primary" id="play">Play</button>
+          <div class="scope-switch" id="speed" role="group" aria-label="Speed"></div>
+          <input type="range" id="scrub" min="0" max="1" step="1" value="0" aria-label="Game time">
+          <span class="replay-clock" id="clock">0:00</span>
+        </div>
+      </div>
+      <aside class="replay-legend" id="legend" aria-label="Players"></aside>
+    </div>
+  </main>
+
+  <footer>
+    <span>Coma Cup 4 Stats · <a href="./">Back to the stats</a></span>
+    <a href="#top">Back to top</a>
+  </footer>
+</body>
+</html>
