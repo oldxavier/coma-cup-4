@@ -23,13 +23,14 @@ function start() {
   fetch("data/stats.json", { cache: "no-cache" })
     .then((r) => r.json())
     .then((data) => {
+      if (!data.meta.replays.length) return;      // a tournament without replays
       S = data;
       gamesById = Object.fromEntries(S.games.map((g) => [g.tag, g]));
       canvas = document.getElementById("map");
       ctx = canvas.getContext("2d");
       pickers();
       window.addEventListener("resize", () => R && (layout(), draw()));
-      open(linked() || S.games[S.games.length - 1].tag);
+      open(linked() || S.meta.replays[S.meta.replays.length - 1]);
     });
 }
 
@@ -43,6 +44,7 @@ if (linked()) start();
 // the stats above are drawn after their data arrives; until then this section sits near the top
 function watchSection() {
   if (!document.querySelector("#group-tables .group")) return setTimeout(watchSection, 200);
+  if (!document.getElementById("replays")) return;      // no replays in this tournament
   new IntersectionObserver((seen, obs) => {
     if (seen.some((e) => e.isIntersecting)) {
       start();
@@ -74,7 +76,9 @@ function bytes(b64) {
 function pickers() {
   const sel = document.getElementById("game-select");
   sel.innerHTML = S.series
-    .map((s) => `<optgroup label="Round ${s.round} · ${esc(team(s.a))} v ${esc(team(s.b))}">${s.games
+    .filter((s) => s.games.some((tag) => S.meta.replays.includes(tag)))
+    .map((s) => `<optgroup label="${esc(s.stage || `Round ${s.round}`)} · ${esc(team(s.a))} v ${esc(team(s.b))}">${s.games
+      .filter((tag) => S.meta.replays.includes(tag))
       .map((tag) => `<option value="${tag}">G${gamesById[tag].n} · ${esc(team(gamesById[tag].winner))} won</option>`)
       .join("")}</optgroup>`)
     .join("");
@@ -121,7 +125,7 @@ function tick(now) {
 let wanted = null;                      // the game last asked for: only it is drawn
 
 function open(tag) {
-  if (!gamesById[tag]) tag = S.games[0].tag;
+  if (!S.meta.replays.includes(tag)) tag = S.meta.replays[S.meta.replays.length - 1];
   wanted = tag;
   pause();
   document.getElementById("game-select").value = tag;

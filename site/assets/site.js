@@ -14,6 +14,8 @@ fetch("data/stats.json", { cache: "no-cache" })
     links();
     summary();
     groups();
+    bracket();
+    replaySection();
     roleSwitches();
     categories();
     teamTable();
@@ -93,6 +95,7 @@ function summary() {
 // ---------------------------------------------------------------- groups and results
 
 function groups() {
+  const swiss = D.meta.format === "swiss";       // a Swiss stage: Median-Buchholz, and no team-by-team grid
   document.getElementById("group-tables").innerHTML = Object.entries(D.groups)
     .map(([g, { table, grid }]) => {
       const rows = table
@@ -104,11 +107,12 @@ function groups() {
             <td>${r.sets_w}–${r.sets_l}</td>
             <td>${r.games_w}–${r.games_l}</td>
             <td class="${r.diff > 0 ? "pos" : r.diff < 0 ? "neg" : ""}">${r.diff > 0 ? "+" : ""}${r.diff}</td>
+            ${swiss ? `<td>${r.buchholz}</td>` : ""}
           </tr>`
         )
         .join("");
       const order = table.map((r) => r.team);
-      const cross = `<div class="crosstab-wrap"><table class="crosstab" aria-label="Group ${g} results by pairing">
+      const cross = swiss ? "" : `<div class="crosstab-wrap"><table class="crosstab" aria-label="Group ${g} results by pairing">
         <thead><tr><th></th>${order.map((t) => `<th scope="col">${esc(team(t))}</th>`).join("")}</tr></thead>
         <tbody>${order
           .map(
@@ -126,7 +130,7 @@ function groups() {
       return `<div class="group">
         <h3>Group ${g}</h3>
         <table class="standings">
-          <thead><tr><th></th><th>Team</th><th title="Series played">P</th><th title="Series won–lost">Series</th><th title="Games won–lost">Games</th><th title="Game difference">+/–</th></tr></thead>
+          <thead><tr><th></th><th>Team</th><th title="Series played">P</th><th title="Series won–lost">Series</th><th title="Games won–lost">Games</th><th title="Game difference">+/–</th>${swiss ? '<th title="Median-Buchholz: the series won by the team\'s opponents, leaving out the best and the worst">MB</th>' : ""}</tr></thead>
           <tbody>${rows}</tbody>
         </table>
         <p class="advance-note"><i></i>Top ${D.meta.advance} advance to the playoffs</p>
@@ -150,6 +154,42 @@ function groups() {
   });
 }
 
+// the playoffs: one column per stage, each series opening its games below
+function bracket() {
+  const el = document.getElementById("bracket");
+  if (!D.bracket.length) return el.remove();
+  const byId = Object.fromEntries(D.series.map((s) => [s.id, s]));
+  const side = (s, t, w) => `<div class="slot ${s.winner === t ? "won" : ""}"><span>${esc(team(t))}</span><b>${w}</b></div>`;
+  el.innerHTML = `<h3>Playoffs</h3>
+    <div class="bracket-grid">${D.bracket
+      .map(
+        (st) => `<div class="stage"><p class="section-label">${esc(st.stage)}</p><div class="matches">${st.series
+          .map((id) => byId[id])
+          .map((s) => `<a class="match" href="#series-${s.id}" data-series="${s.id}">${side(s, s.a, s.score[0])}${side(s, s.b, s.score[1])}</a>`)
+          .join("")}</div></div>`
+      )
+      .join("")}</div>
+    <div class="group-series">${D.bracket
+      .flatMap((st) => st.series)
+      .map((id) => seriesRow(byId[id]))
+      .join("")}</div>`;
+  el.addEventListener("click", (e) => {
+    const a = e.target.closest("a[data-series]");
+    if (!a) return;
+    e.preventDefault();
+    const row = document.getElementById(`series-${a.dataset.series}`);
+    row.open = true;
+    row.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  });
+}
+
+// a tournament captured without per-object positions has no replays
+function replaySection() {
+  if (D.meta.replays.length) return;
+  document.getElementById("replays").remove();
+  document.querySelector('nav a[href="#replays"]').remove();
+}
+
 // one series: a single line until opened, then each game with its civs
 function seriesRow(s) {
   const games = s.games
@@ -161,7 +201,9 @@ function seriesRow(s) {
           .join("")}</div>`;
       return `<div class="game">
         <b>G${g.n}</b>
-        <span class="winner">${esc(team(g.winner))} won${g.parts > 1 ? " · restored once" : ""}<a class="watch" href="#replay-${g.tag}">Watch replay</a></span>
+        <span class="winner">${esc(team(g.winner))} won${g.parts > 1 ? " · restored once" : ""}${
+          D.meta.replays.includes(g.tag) ? `<a class="watch" href="#replay-${g.tag}">Watch replay</a>` : ""
+        }</span>
         <span class="len">${time(g.length)}</span>
         <div class="civs">${side(g.a)}${side(g.b)}</div>
       </div>`;
@@ -171,7 +213,7 @@ function seriesRow(s) {
   return `<details class="series" id="series-${s.id}">
     <summary>
       <b><span class="${s.winner === s.b ? "lost" : ""}">${esc(team(s.a))}</span> ${wa}–${wb} <span class="${s.winner === s.a ? "lost" : ""}">${esc(team(s.b))}</span></b>
-      <span>Round ${s.round}</span>
+      <span>${esc(s.stage || `Round ${s.round}`)}</span>
     </summary>
     ${games}
   </details>`;
@@ -200,6 +242,7 @@ const cardOpen = new Set();
 function categories() {
   const sw = document.getElementById("category-switch");
   const cats = D.boards.categories.filter((c) => D.boards.list.some((b) => b.cat === c.id));
+  if (D.awards.length) cats.push({ id: "awards", title: "Awards", blurb: "The awards published after the final." });
   sw.innerHTML = cats
     .map((c, i) => `<button type="button" role="tab" aria-selected="${i === 0}" data-cat="${c.id}">${esc(c.title)}</button>`)
     .join("");
@@ -323,6 +366,7 @@ function boardCard(b) {
 }
 
 function showCategory() {
+  if (category === "awards") return showAwards();
   const cat = D.boards.categories.find((c) => c.id === category);
   document.getElementById("category-blurb").innerHTML =
     `${esc(cat.blurb)} <span class="legend"><i class="won"></i>team won that game <i class="lost"></i>lost</span>`;
@@ -345,6 +389,18 @@ function showCategory() {
       : "");
   if (el.querySelector("#war-table")) warTable();
   if (el.querySelector("#units-table")) unitsTable();
+}
+
+// the award graphics, each opening at full size
+function showAwards() {
+  document.getElementById("category-blurb").textContent = "The awards published after the final.";
+  document.getElementById("boards").innerHTML = `<div class="award-gallery">${D.awards
+    .map(
+      (a) => `<figure class="award"><a href="${esc(a.image)}" target="_blank" rel="noopener">
+        <img src="${esc(a.image)}" alt="${esc(a.title)}" width="${a.width}" height="${a.height}" loading="lazy"></a>
+        <figcaption>${esc(a.title)}</figcaption></figure>`
+    )
+    .join("")}</div>`;
 }
 
 // ---------------------------------------------------------------- Dark Age villager war
