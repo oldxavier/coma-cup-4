@@ -20,7 +20,7 @@ const linked = () => (location.hash.startsWith("#replay-") ? location.hash.slice
 function start() {
   if (started) return;
   started = true;
-  fetch("data/cc4.json", { cache: "no-cache" })
+  fetch("data/stats.json", { cache: "no-cache" })
     .then((r) => r.json())
     .then((data) => {
       S = data;

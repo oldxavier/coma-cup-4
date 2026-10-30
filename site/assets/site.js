@@ -1,4 +1,4 @@
-// Renders the whole page from data/cc4.json, which is regenerated whenever new games are added.
+// Renders the whole page from data/stats.json, which is regenerated whenever new games are added.
 const ROWS_SHOWN = 5;
 const ROLES = [["all", "All"], ["flank", "Flank"], ["pocket", "Pocket"]];
 
@@ -6,7 +6,7 @@ let D, gamesById, category, role = "all";   // role: the players table's filter
 const flipped = new Set();          // boards showing their "least" side
 const refresh = [];                 // redraws that depend on the players table's role
 
-fetch("data/cc4.json", { cache: "no-cache" })
+fetch("data/stats.json", { cache: "no-cache" })
   .then((r) => r.json())
   .then((data) => {
     D = data;
