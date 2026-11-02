@@ -352,7 +352,7 @@ function civsOf(b) {
 function who(b, r) {
   if (b.scope === "match") return { main: gameLabel(r.g), lines: [esc(`Round ${gamesById[r.g].round} · Group ${gamesById[r.g].group}`)] };
   if (b.scope === "object")
-    return { main: r.o, lines: [`${esc(player(r.p))} ${civTag(r.civ)}`, esc(gameLabel(r.g) + (r.d ? ` · ${r.d}` : ""))] };
+    return { main: r.o, lines: [`${esc(player(r.p))} ${civTag(r.civ)}`, esc(gameLabel(r.g))] };
   if (b.scope === "player")
     return { main: player(r.p), lines: [`${esc(team(D.people[r.p].team))} · ${r.n} game${r.n === 1 ? "" : "s"}`, r.d ? esc(r.d) : ""] };
   return { main: player(r.p), civ: r.civ, lines: [esc(gameLabel(r.g)), r.d ? esc(r.d) : ""] };
@@ -408,7 +408,7 @@ function boardCard(b) {
   views[b.id] = { b, rows, drawn: Math.min(rows.length, FIRST_DRAWN) };
   const note = side.note ?? b.note;
   return `<article class="board" id="board-${b.id}" data-id="${b.id}">
-    <div class="board-top"><span class="scope">${SCOPES[b.scope]}</span></div>
+    <div class="board-top"><span class="scope">${b.kind ? `One ${b.kind}, one game` : SCOPES[b.scope]}</span></div>
     <h3>${esc(side.title)}</h3>
     ${note ? `<p class="note">${esc(note)}</p>` : ""}
     ${controls(b, r)}
