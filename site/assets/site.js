@@ -570,11 +570,11 @@ function warCard(b, r) {
 function warTable() {
   const sel = cardCivs.villager_wars;
   const rows = D.war.filter((x) => civOk(sel, x.a.civ) || civOk(sel, x.b.civ));
-  const who = (s) => `<span title="${esc(player(s.p))}${aliasNote(s.p)}">${esc(player(s.p))}</span><small>${civTag(s.civ)}</small>${s.start !== 3 ? `<small>${s.start} villagers at start</small>` : ""}<small>Feudal click ${time(s.click)}</small>`;
+  const who = (s) => `<span title="${esc(player(s.p))}${aliasNote(s.p)}">${esc(player(s.p))}</span><small>${civTag(s.civ)}</small><small>Feudal click ${time(s.click)}</small>`;
   const pair = (x, y, f) => `${f(x)} <span class="vs-sep">/</span> ${f(y)}`;
   const part = (v) => (v > 0 ? `+${v.toFixed(1)}` : v < 0 ? `−${(-v).toFixed(1)}` : "0");
   const cols = [
-    { key: "game", label: "Game", cls: "name wrap", html: (r) => `${esc(gameLabel(r.g))}<small>fight ${time(r.t0)}–${time(r.t1)}</small>`, sort: (r) => r.g, asc: true },
+    { key: "game", label: "Game", cls: "name wrap", html: (r) => esc(gameLabel(r.g)), sort: (r) => r.g, asc: true },
     { key: "won", label: "Won by", cls: "name", html: (r) => who(r.a), sort: (r) => player(r.a.p).toLowerCase(), asc: true },
     { key: "lost", label: "Against", cls: "name", html: (r) => who(r.b), sort: (r) => player(r.b.p).toLowerCase(), asc: true },
     { key: "margin", label: "Result", html: (r) => `<b>${r.margin.toFixed(1)}</b> villagers<small>kills ${part(r.parts.kills)} · scouts ${part(r.parts.scouts)}</small><small>made ${part(r.parts.made)} · off work ${part(r.parts.off)}</small>`,
