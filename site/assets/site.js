@@ -324,6 +324,10 @@ function cardRows(b) {
   let rows = side.rows.agg
     ? playerTotals(side.rows, r, sel, side.asc ?? b.asc)
     : rowsOf(b, side.rows).filter((x) => b.scope === "match" || (roleOk(r, x.role) && civOk(sel, x.civ)));
+  if (b.one) {
+    const seen = new Set();
+    rows = rows.filter((x) => !seen.has(x.o) && seen.add(x.o));
+  }
   if (flip && !b.least) rows = rows.slice().reverse();
   if (b.cap) rows = rows.slice(0, b.cap);
   return { side, rows };
@@ -348,7 +352,7 @@ function civsOf(b) {
 function who(b, r) {
   if (b.scope === "match") return { main: gameLabel(r.g), lines: [esc(`Round ${gamesById[r.g].round} · Group ${gamesById[r.g].group}`)] };
   if (b.scope === "object")
-    return { main: r.o, lines: [`${esc(player(r.p))} ${civTag(r.civ)}`, esc(gameLabel(r.g))] };
+    return { main: r.o, lines: [`${esc(player(r.p))} ${civTag(r.civ)}`, esc(gameLabel(r.g) + (r.d ? ` · ${r.d}` : ""))] };
   if (b.scope === "player")
     return { main: player(r.p), lines: [`${esc(team(D.people[r.p].team))} · ${r.n} game${r.n === 1 ? "" : "s"}`, r.d ? esc(r.d) : ""] };
   return { main: player(r.p), civ: r.civ, lines: [esc(gameLabel(r.g)), r.d ? esc(r.d) : ""] };
