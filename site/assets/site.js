@@ -561,11 +561,6 @@ function warCard(b, r) {
   return `<article class="board war" id="board-${b.id}" data-id="${b.id}">
     <div class="board-top"><span class="scope">One game · flank against the flank facing them</span></div>
     <h3>${esc(b.title)}</h3>
-    <p class="note">A war is the two flanks killing 3 or more of each other's villagers before either clicks up to Feudal. It is
-      scored over the fight only, from a minute before their first villager kill to a minute after the last, until the first of
-      the two clicks up; teammates' raids do not count. Everything is priced in villager work lost until minute 40, when flanks
-      stop making villagers: a villager killed is missing until then, a scout counts as half a villager, 25 s of idle TC is a
-      villager not made, and a villager idle, walking or fighting costs only that time.</p>
     ${controls(b, r)}
     <div class="table-shell war-shell"><table class="war-table" id="war-table"><thead></thead><tbody></tbody></table></div>
   </article>`;
@@ -575,7 +570,7 @@ function warCard(b, r) {
 function warTable() {
   const sel = cardCivs.villager_wars;
   const rows = D.war.filter((x) => civOk(sel, x.a.civ) || civOk(sel, x.b.civ));
-  const who = (s) => `<span title="${esc(player(s.p))}${aliasNote(s.p)}">${esc(player(s.p))}</span><small>${civTag(s.civ)} · Feudal click ${time(s.click)}</small>`;
+  const who = (s) => `<span title="${esc(player(s.p))}${aliasNote(s.p)}">${esc(player(s.p))}</span><small>${civTag(s.civ)}</small><small>Feudal click ${time(s.click)}</small>`;
   const pair = (x, y, f) => `${f(x)} <span class="vs-sep">/</span> ${f(y)}`;
   const part = (v) => (v > 0 ? `+${v.toFixed(1)}` : v < 0 ? `−${(-v).toFixed(1)}` : "0");
   const cols = [
@@ -585,7 +580,7 @@ function warTable() {
     { key: "margin", label: "Result", html: (r) => `${r.margin ? `<b>${r.margin.toFixed(1)}</b> villagers` : "<b>Even</b>"}<small>kills ${part(r.parts.kills)} · scouts ${part(r.parts.scouts)}</small><small>TC ${part(r.parts.tc)} · off work ${part(r.parts.off)}</small>`,
       sort: (r) => r.margin, title: "The result in villagers, and where it came from" },
     { key: "vills", label: "Villagers", text: (r) => `${r.vk}–${r.vl}`, sort: (r) => r.vk - r.vl, title: "Villagers each side killed of the other during the fight, winner first" },
-    { key: "scouts", label: "Scouts", text: (r) => (r.sk || r.sl ? `${r.sk}–${r.sl}` : "–"), sort: (r) => r.sk - r.sl, title: "Scouts each side killed of the other in the Dark Age, winner first" },
+    { key: "scouts", label: "Scouts", text: (r) => `${r.sk}–${r.sl}`, sort: (r) => r.sk - r.sl, title: "Scouts each side killed of the other in the Dark Age, winner first" },
     { key: "idle", label: "Idle TC", html: (r) => pair(r.a, r.b, (s) => time(s.idle)), sort: (r) => r.b.idle - r.a.idle, title: "Town Center idle time during the fight, winner / the other" },
     { key: "off", label: "Off work, min", html: (r) => pair(r.a, r.b, (s) => Math.round(s.off)), sort: (r) => r.b.off - r.a.off,
       title: "Villager-minutes spent idle, walking or fighting instead of gathering during the fight, winner / the other" },
