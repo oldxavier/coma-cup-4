@@ -11,6 +11,7 @@ fetch("data/stats.json", { cache: "no-cache" })
     D = data;
     gamesById = Object.fromEntries(D.games.map((g) => [g.tag, g]));
     PG = D.pg.map(([p, g, civ, role, w]) => ({ p, g, civ, role, w: !!w }));
+    D.boards.list.forEach((b) => { if (b.civs) cardCivs[b.id] = { mode: b.civs.mode, civs: new Set(b.civs.civs) }; });
     links();
     summary();
     groups();
