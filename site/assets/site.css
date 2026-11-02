@@ -374,11 +374,14 @@ h3 { margin: 0 0 .65rem; font-size: 1.15rem; line-height: 1.3; }
   }
 }
 .board.war { grid-column: 1 / -1; }
-.war-shell { max-height: 520px; margin-top: .6rem; }
+.war-shell { max-height: 820px; margin-top: .6rem; }
 .war-table { width: 100%; min-width: 760px; border-collapse: collapse; font-size: .84rem; }
 .war-table th { position: sticky; z-index: 2; top: 0; padding: 0; border-bottom: 1px solid #bfc3bb; background: #eef1eb; text-align: left; }
 .war-table td { padding: .55rem .8rem; border-bottom: 1px solid #ebeae4; white-space: nowrap; }
 .war-table tbody tr:nth-child(even) { background: #fbfaf6; }
+.war-table .vs-sep { color: var(--muted); }
+.war-table td.wrap { min-width: 10rem; white-space: normal; }
+.war-table td { padding-inline: .6rem; }
 td small { display: flex; align-items: center; gap: .3rem; color: var(--muted); font-size: .72rem; font-weight: 400; }
 td.pos { color: var(--win); font-weight: 600; }
 td.neg { color: var(--loss); }

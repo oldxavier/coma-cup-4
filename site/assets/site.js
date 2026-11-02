@@ -317,7 +317,8 @@ function totalsDetail(kind, parts) {
     const items = [...count].filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1]);
     return items.length ? items.map(([k, n]) => `${n}× ${k}`).join(", ") : null;
   }
-  return kind.map((label, j) => `${Math.round(parts.reduce((s, p) => s + p[j], 0))} ${label}`).join(", ");
+  const named = kind.map((label, j) => [Math.round(parts.reduce((s, p) => s + p[j], 0)), label]).filter(([n]) => n);
+  return named.length ? named.map(([n, label]) => `${n} ${label}`).join(", ") : null;
 }
 
 function cardRows(b) {
@@ -343,7 +344,7 @@ function civsOf(b) {
     if (rows.agg) rows.vals.forEach(([i]) => civs.add(PG[i].civ));
     else rowsOf(b, rows).forEach((x) => civs.add(x.civ));
   };
-  if (b.scope === "war") D.war.forEach((x) => civs.add(x.civ));
+  if (b.scope === "war") D.war.forEach((x) => civs.add(x.a.civ).add(x.b.civ));
   else add(b.rows), b.least && add(b.least.rows);
   return [...civs].sort((a, c) => a.localeCompare(c));
 }
@@ -364,7 +365,7 @@ const SCOPES = { game: "One game", player: "All games", object: "One unit or bui
 const CIV_SCOPES = new Set(["game", "player", "object", "war"]);
 
 function controls(b, r) {
-  const roles = b.scope === "match" ? "" : `<span class="seg" role="group" aria-label="Player role">${ROLES.map(
+  const roles = b.scope === "match" || b.scope === "war" ? "" : `<span class="seg" role="group" aria-label="Player role">${ROLES.map(
     ([k, l]) => `<button type="button" data-act="role" data-role="${k}" aria-pressed="${k === r}">${l}</button>`
   ).join("")}</span>`;
   const flip = cardFlip.has(b.id);
@@ -558,27 +559,38 @@ function showAwards() {
 
 function warCard(b, r) {
   return `<article class="board war" id="board-${b.id}" data-id="${b.id}">
-    <div class="board-top"><span class="scope">One game · per player</span></div>
+    <div class="board-top"><span class="scope">One game · flank against the flank facing them</span></div>
     <h3>${esc(b.title)}</h3>
+    <p class="note">A war is the two flanks killing 3 or more of each other's villagers before either clicks up to Feudal. It is
+      scored over the fight only, from a minute before their first villager kill to a minute after the last, until the first of
+      the two clicks up; teammates' raids do not count. Everything is priced in villager work lost until minute 40, when flanks
+      stop making villagers: a villager killed is missing until then, a scout counts as half a villager, 25 s of idle TC is a
+      villager not made, and a villager idle, walking or fighting costs only that time.</p>
     ${controls(b, r)}
     <div class="table-shell war-shell"><table class="war-table" id="war-table"><thead></thead><tbody></tbody></table></div>
   </article>`;
 }
 
+// one row per war, the winner first; each side's figures are for the fight window
 function warTable() {
-  const r = cardRole.dark_age_war || "all";
-  const rows = D.war.filter((x) => roleOk(r, x.role) && civOk(cardCivs.dark_age_war, x.civ));
+  const sel = cardCivs.villager_wars;
+  const rows = D.war.filter((x) => civOk(sel, x.a.civ) || civOk(sel, x.b.civ));
+  const who = (s) => `<span title="${esc(player(s.p))}${aliasNote(s.p)}">${esc(player(s.p))}</span><small>${civTag(s.civ)} · Feudal click ${time(s.click)}</small>`;
+  const pair = (x, y, f) => `${f(x)} <span class="vs-sep">/</span> ${f(y)}`;
+  const part = (v) => (v > 0 ? `+${v.toFixed(1)}` : v < 0 ? `−${(-v).toFixed(1)}` : "0");
   const cols = [
-    { key: "name", label: "Player", cls: "name", html: (r) => `<span title="${esc(player(r.p))}${aliasNote(r.p)}">${esc(player(r.p))}</span><small>${civTag(r.civ)} · ${esc(gameLabel(r.g))}</small>`, sort: (r) => player(r.p).toLowerCase(), asc: true },
-    { key: "vs", label: "Against", cls: "team", html: (r) => r.vs.map((p) => esc(player(p))).join(", "), sort: (r) => player(r.vs[0]).toLowerCase(), asc: true },
-    { key: "killed", label: "Killed", text: (r) => r.killed, sort: (r) => r.killed },
-    { key: "lost", label: "Lost", text: (r) => r.lost, sort: (r) => r.lost },
-    { key: "net", label: "Net", text: (r) => signed(r.net), sort: (r) => r.net * 1000 + r.killed + r.lost, tone: (r) => r.net },
-    { key: "idle", label: "Idle TC", text: (r) => time(r.idle), sort: (r) => r.idle, asc: true },
-    { key: "opp", label: "Their idle TC", text: (r) => time(r.opp_idle), sort: (r) => r.opp_idle },
-    { key: "econ", label: "Balance", text: (r) => signed(r.econ), sort: (r) => r.econ, tone: (r) => r.econ, title: D.meta.balance_note },
+    { key: "game", label: "Game", cls: "name wrap", html: (r) => `${esc(gameLabel(r.g))}<small>fight ${time(r.t0)}–${time(r.t1)}</small>`, sort: (r) => r.g, asc: true },
+    { key: "won", label: "Won by", cls: "name", html: (r) => who(r.a), sort: (r) => player(r.a.p).toLowerCase(), asc: true },
+    { key: "lost", label: "Against", cls: "name", html: (r) => who(r.b), sort: (r) => player(r.b.p).toLowerCase(), asc: true },
+    { key: "margin", label: "Result", html: (r) => `${r.margin ? `<b>${r.margin.toFixed(1)}</b> villagers` : "<b>Even</b>"}<small>kills ${part(r.parts.kills)} · scouts ${part(r.parts.scouts)}</small><small>TC ${part(r.parts.tc)} · off work ${part(r.parts.off)}</small>`,
+      sort: (r) => r.margin, title: "The result in villagers, and where it came from" },
+    { key: "vills", label: "Villagers", text: (r) => `${r.vk}–${r.vl}`, sort: (r) => r.vk - r.vl, title: "Villagers each side killed of the other during the fight, winner first" },
+    { key: "scouts", label: "Scouts", text: (r) => (r.sk || r.sl ? `${r.sk}–${r.sl}` : "–"), sort: (r) => r.sk - r.sl, title: "Scouts each side killed of the other in the Dark Age, winner first" },
+    { key: "idle", label: "Idle TC", html: (r) => pair(r.a, r.b, (s) => time(s.idle)), sort: (r) => r.b.idle - r.a.idle, title: "Town Center idle time during the fight, winner / the other" },
+    { key: "off", label: "Off work, min", html: (r) => pair(r.a, r.b, (s) => Math.round(s.off)), sort: (r) => r.b.off - r.a.off,
+      title: "Villager-minutes spent idle, walking or fighting instead of gathering during the fight, winner / the other" },
   ];
-  sortable("war-table", cols, rows, "econ");
+  sortable("war-table", cols, rows, "margin");
 }
 
 // ---------------------------------------------------------------- units made
