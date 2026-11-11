@@ -837,8 +837,8 @@ function teamTable() {
     { key: "eco_kills", label: "Eco kills", ...per("eco_kills") },
     { key: "building_razes", label: "Razed", ...per("building_razes") },
     { key: "total_collected_res", label: "Resources", ...per("total_collected_res") },
-    { key: "trade_profit", label: "Trade profit", ...per("trade_profit") },
-    { key: "walls", label: "Wall pieces", ...per("walls") },
+    { key: "trade_profit", label: "Trade", ...per("trade_profit"), title: "Trade profit per game" },
+    { key: "walls", label: "Walls", ...per("walls"), title: "Wall pieces per game" },
     { key: "towers", label: "Towers", ...per("towers") },
     { key: "castles", label: "Castles", ...per("castles") },
   ];
