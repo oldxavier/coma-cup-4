@@ -741,6 +741,7 @@ function playerTable() {
     { key: "role", label: "Role", cls: "team", text: roleText, sort: (r) => r.flank - r.pocket, search: true },
     { key: "games", label: "Games", text: (r) => r.games, sort: (r) => r.games },
     { key: "wins", label: "Won", text: (r) => r.wins, sort: (r) => r.wins },
+    { key: "length", label: "Avg game", text: (r) => time(r.length), sort: (r) => r.length, title: "Average length of the player's games" },
     { key: "kills", label: "Kills", text: (r) => value(r.kills), sort: (r) => r.kills },
     { key: "deaths", label: "Deaths", text: (r) => value(r.deaths), sort: (r) => r.deaths },
     { key: "kd", label: "K/D", text: (r) => value(r.kd, "dec2"), sort: (r) => r.kd },
@@ -813,6 +814,7 @@ function playerRows() {
     const kills = tot("unit_kills"), deaths = tot("unit_deaths");
     return {
       p, team: D.people[p].team, games: idx.length, wins: idx.filter((i) => PG[i].w).length,
+      length: idx.reduce((s, i) => s + gamesById[PG[i].g].length, 0) / idx.length,
       flank: idx.filter((i) => PG[i].role === "flank").length, pocket: idx.filter((i) => PG[i].role === "pocket").length,
       kills, deaths, kd: Math.round((kills / Math.max(deaths, 1)) * 100) / 100,
       eapm: avg("total_real_eapgm"), feudal: avg("feudal"), castle: avg("castle"), imperial: avg("imperial"),
@@ -830,6 +832,7 @@ function teamTable() {
     { key: "group", label: "Group", cls: "team", text: (r) => (D.teams[r.team] || {}).group || "–", sort: (r) => (D.teams[r.team] || {}).group || "", asc: true },
     { key: "games", label: "Games", text: (r) => r.games, sort: (r) => r.games },
     { key: "wins", label: "Won", text: (r) => r.wins, sort: (r) => r.wins },
+    { key: "length", label: "Avg game", text: (r) => time(r.length), sort: (r) => r.length, title: "Average length of the team's games" },
     { key: "unit_kills", label: "Kills", ...per("unit_kills") },
     { key: "eco_kills", label: "Eco kills", ...per("eco_kills") },
     { key: "building_razes", label: "Razed", ...per("building_razes") },
@@ -839,7 +842,12 @@ function teamTable() {
     { key: "towers", label: "Towers", ...per("towers") },
     { key: "castles", label: "Castles", ...per("castles") },
   ];
-  sortable("team-table", cols, D.team_rows, "wins");
+  const lengths = (t) => D.games.filter((g) => g.a === t || g.b === t).map((g) => g.length);
+  const rows = D.team_rows.map((r) => {
+    const l = lengths(r.team);
+    return { ...r, length: l.length ? l.reduce((a, b) => a + b, 0) / l.length : null };
+  });
+  sortable("team-table", cols, rows, "wins");
 }
 
 // Every civ by picks (across) and win rate (up), drawn with its emblem. Civs with the same picks AND
