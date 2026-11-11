@@ -603,7 +603,7 @@ function warCard(b, r) {
 function warTable() {
   const sel = cardCivs.villager_wars;
   const rows = D.war.filter((x) => civOk(sel, x.a.civ) || civOk(sel, x.b.civ));
-  const who = (s) => `<span title="${esc(player(s.p))}${aliasNote(s.p)}">${esc(player(s.p))}</span><small>${civTag(s.civ)}</small><small>Feudal click ${time(s.click)}</small>`;
+  const who = (s) => `<span title="${esc(player(s.p))}${aliasNote(s.p)}">${esc(player(s.p))}</span>${D.meta.solo ? "" : `<small>${esc(team(s.team))}</small>`}<small>${civTag(s.civ)}</small><small>Feudal click ${time(s.click)}</small>`;
   const pair = (x, y, f) => `${f(x)} <span class="vs-sep">/</span> ${f(y)}`;
   const part = (v) => (v > 0 ? `+${v.toFixed(1)}` : v < 0 ? `−${(-v).toFixed(1)}` : "0");
   const cols = [
@@ -614,7 +614,7 @@ function warTable() {
       sort: (r) => r.margin, title: "The result in villagers, and where it came from" },
     { key: "vills", label: "Villagers", text: (r) => `${r.vk}–${r.vl}`, sort: (r) => r.vk - r.vl, title: "Villagers each side killed of the other during the fight, winner first" },
     { key: "scouts", label: "Scouts", text: (r) => `${r.sk}–${r.sl}`, sort: (r) => r.sk - r.sl, title: "Scouts each side killed of the other in the Dark Age, winner first" },
-    { key: "idle", label: "Idle TC", html: (r) => pair(r.a, r.b, (s) => time(s.idle)), sort: (r) => r.b.idle - r.a.idle, title: "Town Center idle time from the start of the game to the end of the fight, winner / the other" },
+    { key: "idle", label: "Idle TC", html: (r) => pair(r.a, r.b, (s) => time(s.idle)), sort: (r) => r.b.idle - r.a.idle, title: "Town Center idle time during the fight, winner / the other" },
     { key: "off", label: "Off work, min", html: (r) => pair(r.a, r.b, (s) => Math.round(s.off)), sort: (r) => r.b.off - r.a.off,
       title: "Villager-minutes spent idle, walking or fighting instead of gathering during the fight, winner / the other" },
   ];
