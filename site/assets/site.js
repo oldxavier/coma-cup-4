@@ -742,8 +742,8 @@ function playerTable() {
     { key: "games", label: "Games", text: (r) => r.games, sort: (r) => r.games },
     { key: "wins", label: "Won", text: (r) => r.wins, sort: (r) => r.wins },
     { key: "length", label: "Avg game", text: (r) => time(r.length), sort: (r) => r.length, title: "Average length of the player's games" },
-    { key: "kills", label: "Kills", text: (r) => value(r.kills), sort: (r) => r.kills },
-    { key: "deaths", label: "Deaths", text: (r) => value(r.deaths), sort: (r) => r.deaths },
+    { key: "kills", label: "Kills", text: (r) => value(r.kills), sort: (r) => r.kills, title: "Units killed per game" },
+    { key: "deaths", label: "Deaths", text: (r) => value(r.deaths), sort: (r) => r.deaths, title: "Units lost per game" },
     { key: "kd", label: "K/D", text: (r) => value(r.kd, "dec2"), sort: (r) => r.kd },
     { key: "eapm", label: "eAPM", text: (r) => value(r.eapm, "dec1"), sort: (r) => r.eapm },
     { key: "feudal", label: "Feudal", text: (r) => time(r.feudal), sort: (r) => r.feudal, asc: true },
@@ -816,7 +816,9 @@ function playerRows() {
       p, team: D.people[p].team, games: idx.length, wins: idx.filter((i) => PG[i].w).length,
       length: idx.reduce((s, i) => s + gamesById[PG[i].g].length, 0) / idx.length,
       flank: idx.filter((i) => PG[i].role === "flank").length, pocket: idx.filter((i) => PG[i].role === "pocket").length,
-      kills, deaths, kd: Math.round((kills / Math.max(deaths, 1)) * 100) / 100,
+      // per game, like the other columns; K/D is the totals' ratio, which per-game averages give too
+      kills: kills / idx.length, deaths: deaths / idx.length,
+      kd: deaths ? Math.round((kills / deaths) * 100) / 100 : kills ? Infinity : null,      // none lost: ∞
       eapm: avg("total_real_eapgm"), feudal: avg("feudal"), castle: avg("castle"), imperial: avg("imperial"),
       idle_feudal: avg("idle_feudal"), idle_castle: avg("idle_castle"), res: avg("total_collected_res"), walls: avg("walls"),
       housed: avg("housed"), idle_share: avg("idle_share"), gather_rate: avg("gather_rate"),
