@@ -275,12 +275,12 @@ function roleSwitches() {
 const cardRole = {};
 const cardCivs = {};               // card id -> {mode: "only" | "except", civs: Set}
 const cardFlip = new Set();        // cards showing the other end of their list
-const cardView = {};               // card id -> the scope it shows, where it has two ("game" or "player")
+const cardView = {};               // card id -> "alt" where a card with two views shows its other one
 
-// the card as it shows now: its other view (one game against all games) laid over it when chosen;
-// the other view brings its own order buttons, or none
+// the card as it shows now: its other view (one game against all games, or total against per game)
+// laid over it when chosen; the other view brings its own order buttons, or none
 function viewOf(b) {
-  return b.alt && cardView[b.id] === b.alt.scope ? { ...b, label: undefined, least: undefined, ...b.alt } : b;
+  return b.alt && cardView[b.id] === "alt" ? { ...b, label: undefined, least: undefined, ...b.alt } : b;
 }
 let civPop = null;                 // the card (or "players") whose civ list is open
 const views = {};                  // card id -> the rows it shows now, and how many are drawn
@@ -333,7 +333,12 @@ function playerTotals(spec, r, sel, asc) {
   const acc = new Map();
   for (const [i, v, parts] of spec.vals) {
     if (!inView(PG[i])) continue;
-    const a = acc.get(PG[i].p) || { sum: 0, n: 0, parts: [] };
+    const a = acc.get(PG[i].p) || { sum: 0, n: 0, parts: [], never: 0 };
+    if (v === null) {               // a game it never happened in: not in the average, but said on the row
+      a.never += 1;
+      acc.set(PG[i].p, a);
+      continue;
+    }
     a.sum += v;
     a.n += 1;
     if (parts !== undefined) a.parts.push(parts);
@@ -342,7 +347,7 @@ function playerTotals(spec, r, sel, asc) {
   const out = [];
   for (const [p, a] of acc) {
     const n = spec.agg.avg ? a.n : played.get(p);
-    if (n < spec.agg.min) continue;
+    if (!a.n || n < spec.agg.min) continue;
     if (spec.agg.ratio !== undefined) {
       // the totals' ratio (all kills over all deaths), not the average of each game's; none lost is ∞,
       // ranked above every finite ratio by a value no real one reaches
@@ -352,7 +357,9 @@ function playerTotals(spec, r, sel, asc) {
                  d: `${Math.round(top)} kills, ${Math.round(bottom)} deaths` });
       continue;
     }
-    out.push({ p, n, v: Math.round(((spec.agg.avg ? a.sum / a.n : a.sum) * 100)) / 100, d: totalsDetail(spec.agg.detail, a.parts) });
+    const never = a.never ? `never in ${a.never} game${a.never === 1 ? "" : "s"}` : null;
+    out.push({ p, n, v: Math.round(((spec.agg.avg ? a.sum / a.n : a.sum) * 100)) / 100,
+               d: [totalsDetail(spec.agg.detail, a.parts), never].filter(Boolean).join(" · ") || null });
   }
   return out.sort((x, y) => (asc ? x.v - y.v : y.v - x.v));
 }
@@ -414,9 +421,10 @@ const SCOPES = { game: "One game", player: "All games", object: "One unit or bui
 const CIV_SCOPES = new Set(["game", "player", "object", "war"]);
 
 function controls(b, r) {
-  const scopes = b.alt
-    ? `<span class="seg" role="group" aria-label="Games">${[["game", "One game"], ["player", "All games"]]
-        .map(([k, l]) => `<button type="button" data-act="view" data-view="${k}" aria-pressed="${b.scope === k}">${l}</button>`)
+  const shown = cardView[b.id] || "main";
+  const scopes = b.switch
+    ? `<span class="seg" role="group" aria-label="Games">${b.switch
+        .map(([k, l]) => `<button type="button" data-act="view" data-view="${k}" aria-pressed="${shown === k}">${esc(l)}</button>`)
         .join("")}</span>`
     : "";
   const roles = b.scope === "match" || b.scope === "war" || D.meta.solo ? "" : `<span class="seg" role="group" aria-label="Player role">${ROLES.map(
@@ -464,11 +472,13 @@ function boardCard(card) {
   if (b.scope === "units") return unitsCard(b, r);
   const { side, rows } = cardRows(b);
   views[b.id] = { b, rows, drawn: Math.min(rows.length, FIRST_DRAWN) };
+  // No subtitle: the note is the title's tooltip, so switching views never moves the card around.
+  // The scope line stays only where it says more than the switch or the title would.
   const note = side.note ?? b.note;
+  const scope = b.kind ? `One ${b.kind}, one game` : b.scope === "match" ? SCOPES.match : "";
   return `<article class="board" id="board-${b.id}" data-id="${b.id}">
-    <div class="board-top"><span class="scope">${b.kind ? `One ${b.kind}, one game` : SCOPES[b.scope]}</span></div>
-    <h3>${esc(side.title)}</h3>
-    ${note ? `<p class="note">${esc(note)}</p>` : ""}
+    ${scope ? `<div class="board-top"><span class="scope">${scope}</span></div>` : ""}
+    <h3${note ? ` title="${esc(note)}"` : ""}>${esc(side.title)}</h3>
     ${controls(b, r)}
     ${rows.length ? `<ol class="board-list" data-id="${b.id}">${rowsHtml(b, rows, 0, views[b.id].drawn)}</ol>` : `<p class="empty">${emptyText(b, r)}</p>`}
   </article>`;
