@@ -22,7 +22,7 @@ fetch("data/stats.json", { cache: "no-cache" })
     categories();
     teamTable();
     playerTable();
-    civTable();
+    civPlot();
     curveSection();
     headToHead();
     stripes();
@@ -303,6 +303,7 @@ function categories() {
     category = btn.dataset.cat;
     civPop = null;
     showCategory();
+    toTabTop();
   });
   const boards = document.getElementById("boards");
   boards.addEventListener("click", cardClick);
@@ -312,6 +313,14 @@ function categories() {
   document.addEventListener("keydown", (e) => e.key === "Escape" && civPop && closeCivs(true));
   category = cats[0].id;
   showCategory();
+}
+
+// A tab opens at its top: from far down a long tab, a short one would otherwise leave the page
+// showing whatever comes after it. Only when scrolled past the tab's start, under the sticky tab bar.
+function toTabTop() {
+  const bar = document.querySelector(".category-bar"), start = document.getElementById("category-blurb");
+  const y = start.getBoundingClientRect().top + window.scrollY - bar.offsetHeight;
+  if (window.scrollY > y) window.scrollTo({ top: y, behavior: "auto" });
 }
 
 // ---- which rows a card shows
@@ -833,15 +842,71 @@ function teamTable() {
   sortable("team-table", cols, D.team_rows, "wins");
 }
 
-function civTable() {
-  const cols = [
-    { key: "civ", label: "Civ", cls: "name", html: (r) => civTag(r.civ), sort: (r) => r.civ, asc: true },
-    { key: "picks", label: "Picks", text: (r) => r.picks, sort: (r) => r.picks },
-    { key: "wins", label: "Won", text: (r) => r.wins, sort: (r) => r.wins },
-    { key: "rate", label: "Win %", text: (r) => (r.picks >= 3 ? Math.round((100 * r.wins) / r.picks) + "%" : "–"), sort: (r) => (r.picks >= 3 ? r.wins / r.picks : null) },
-    { key: "kills", label: "Kills", text: (r) => value(r.kills), sort: (r) => r.kills },
-  ];
-  sortable("civ-table", cols, D.civs, "picks");
+// Every civ by picks (across) and win rate (up), drawn with its emblem. Civs with the same picks AND
+// wins sit on the same spot, so they are drawn as one group there -- nudging them apart would invent a
+// difference -- and the line under the plot names everyone on the spot hovered, focused or tapped.
+function civPlot() {
+  const fig = document.getElementById("civ-plot");
+  const spots = new Map();
+  for (const c of D.civs) {
+    const k = `${c.picks}/${c.wins}`;
+    if (!spots.has(k)) spots.set(k, { picks: c.picks, wins: c.wins, civs: [] });
+    spots.get(k).civs.push(c.civ);
+  }
+  const pts = [...spots.values()];
+  pts.forEach((s) => s.civs.sort((a, b) => a.localeCompare(b)));
+  const W = 760, H = 440, L = 54, R = 24, T = 26, B = 56, pw = W - L - R, ph = H - T - B;
+  const xMax = Math.max(...pts.map((s) => s.picks)) + 1;
+  const x = (p) => L + (p / xMax) * pw;
+  const y = (rate) => T + (1 - (rate + 0.08) / 1.16) * ph;        // a little room above 100% and below 0%
+  const step = xMax <= 15 ? 1 : xMax <= 30 ? 2 : 5;
+  const E = 20, GAP = 2;                                         // emblem size and the space between, in a group
+  const pct = (s) => Math.round((100 * s.wins) / s.picks);
+  const says = (s) => `${s.civs.join(", ")}: ${s.picks} pick${s.picks === 1 ? "" : "s"}, ${s.wins} won (${pct(s)}%)`;
+
+  let svg = `<svg class="civ-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Civilizations by picks and win rate">
+    <defs><clipPath id="civ-round" clipPathUnits="objectBoundingBox"><circle cx=".5" cy=".5" r=".5"/></clipPath></defs>`;
+  for (const v of [0, 0.25, 0.5, 0.75, 1])
+    svg += `<line class="${v === 0.5 ? "civ-half" : "civ-grid"}" x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}"/>
+      <text class="civ-tick" x="${L - 8}" y="${y(v) + 4}" text-anchor="end">${v * 100}%</text>`;
+  for (let p = 0; p <= xMax; p += step)
+    svg += `<line class="civ-grid" x1="${x(p)}" x2="${x(p)}" y1="${T}" y2="${H - B}"/>
+      <text class="civ-tick" x="${x(p)}" y="${H - B + 18}" text-anchor="middle">${p}</text>`;
+  svg += `<text class="civ-axis" x="${L + pw / 2}" y="${H - 12}" text-anchor="middle">Times picked</text>
+    <text class="civ-axis" transform="translate(14 ${T + ph / 2}) rotate(-90)" text-anchor="middle">Win rate</text>`;
+  // the busiest spots last, so a small group is never hidden under a big one
+  const order = pts.map((s, i) => i).sort((a, b) => pts[a].civs.length - pts[b].civs.length);
+  for (const i of order) {
+    const s = pts[i], n = s.civs.length;
+    const cols = Math.ceil(Math.sqrt(n)), rows = Math.ceil(n / cols);
+    const gw = cols * E + (cols - 1) * GAP, gh = rows * E + (rows - 1) * GAP;
+    const cx = x(s.picks), cy = y(s.wins / s.picks), x0 = cx - gw / 2, y0 = cy - gh / 2;
+    let g = `<g class="civ-pt" tabindex="0" role="button" data-i="${i}" aria-label="${esc(says(s))}"><title>${esc(says(s))}</title>`;
+    if (n > 1) g += `<rect class="civ-pt-bg" x="${x0 - 3}" y="${y0 - 3}" width="${gw + 6}" height="${gh + 6}" rx="${E / 2 + 3}"/>`;
+    s.civs.forEach((civ, j) => {
+      const ex = x0 + (j % cols) * (E + GAP), ey = y0 + Math.floor(j / cols) * (E + GAP);
+      const src = D.emblems[civ];
+      g += src
+        ? `<image href="${esc(src)}" x="${ex}" y="${ey}" width="${E}" height="${E}" clip-path="url(#civ-round)" preserveAspectRatio="xMidYMid slice"/>`
+        : `<circle class="civ-noemblem" cx="${ex + E / 2}" cy="${ey + E / 2}" r="${E / 2}"/><text class="civ-initials" x="${ex + E / 2}" y="${ey + E / 2 + 3.5}" text-anchor="middle">${esc(civ.slice(0, 2))}</text>`;
+    });
+    svg += g + "</g>";
+  }
+  svg += "</svg>";
+  const hint = "Hover or tap a civ to see who is on that spot.";
+  fig.innerHTML = `${svg}<figcaption class="civ-caption" id="civ-caption">${hint}</figcaption>`;
+  const cap = document.getElementById("civ-caption");
+  const show = (e) => {
+    const g = e.target.closest && e.target.closest(".civ-pt");
+    if (!g) return;
+    fig.querySelectorAll(".civ-pt.on").forEach((x) => x.classList.remove("on"));
+    g.classList.add("on");
+    const s = pts[+g.dataset.i];
+    cap.innerHTML = `<span class="civ-caption-civs">${s.civs.map(civTag).join(" ")}</span> <span>${s.picks} pick${s.picks === 1 ? "" : "s"}, ${s.wins} won · <b>${pct(s)}%</b></span>`;
+  };
+  fig.addEventListener("pointerover", show);
+  fig.addEventListener("focusin", show);
+  fig.addEventListener("click", show);
 }
 
 // ---------------------------------------------------------------- over time
