@@ -275,6 +275,13 @@ function roleSwitches() {
 const cardRole = {};
 const cardCivs = {};               // card id -> {mode: "only" | "except", civs: Set}
 const cardFlip = new Set();        // cards showing the other end of their list
+const cardView = {};               // card id -> the scope it shows, where it has two ("game" or "player")
+
+// the card as it shows now: its other view (one game against all games) laid over it when chosen;
+// the other view brings its own order buttons, or none
+function viewOf(b) {
+  return b.alt && cardView[b.id] === b.alt.scope ? { ...b, label: undefined, least: undefined, ...b.alt } : b;
+}
 let civPop = null;                 // the card (or "players") whose civ list is open
 const views = {};                  // card id -> the rows it shows now, and how many are drawn
 const FIRST_DRAWN = 40, MORE_DRAWN = 80;
@@ -336,6 +343,15 @@ function playerTotals(spec, r, sel, asc) {
   for (const [p, a] of acc) {
     const n = spec.agg.avg ? a.n : played.get(p);
     if (n < spec.agg.min) continue;
+    if (spec.agg.ratio !== undefined) {
+      // the totals' ratio (all kills over all deaths), not the average of each game's; none lost is ∞,
+      // ranked above every finite ratio by a value no real one reaches
+      const top = a.parts.reduce((s, x) => s + x[0], 0), bottom = a.parts.reduce((s, x) => s + x[1], 0);
+      if (top < spec.agg.ratio) continue;
+      out.push({ p, n, v: bottom ? Math.round((top / bottom) * 100) / 100 : 1e6 + top, txt: bottom ? null : "∞",
+                 d: `${Math.round(top)} kills, ${Math.round(bottom)} deaths` });
+      continue;
+    }
     out.push({ p, n, v: Math.round(((spec.agg.avg ? a.sum / a.n : a.sum) * 100)) / 100, d: totalsDetail(spec.agg.detail, a.parts) });
   }
   return out.sort((x, y) => (asc ? x.v - y.v : y.v - x.v));
@@ -398,6 +414,11 @@ const SCOPES = { game: "One game", player: "All games", object: "One unit or bui
 const CIV_SCOPES = new Set(["game", "player", "object", "war"]);
 
 function controls(b, r) {
+  const scopes = b.alt
+    ? `<span class="seg" role="group" aria-label="Games">${[["game", "One game"], ["player", "All games"]]
+        .map(([k, l]) => `<button type="button" data-act="view" data-view="${k}" aria-pressed="${b.scope === k}">${l}</button>`)
+        .join("")}</span>`
+    : "";
   const roles = b.scope === "match" || b.scope === "war" || D.meta.solo ? "" : `<span class="seg" role="group" aria-label="Player role">${ROLES.map(
     ([k, l]) => `<button type="button" data-act="role" data-role="${k}" aria-pressed="${k === r}">${l}</button>`
   ).join("")}</span>`;
@@ -410,7 +431,7 @@ function controls(b, r) {
       ? ""
       : `<button type="button" class="flip" data-act="flip" aria-pressed="${flip}" title="Turn the list round">Reverse</button>`;
   const civs = CIV_SCOPES.has(b.scope) ? civButton(b.id) + (civPop === b.id ? civPopup(b.id, civsOf(b)) : "") : "";
-  return roles || order || civs ? `<div class="card-controls">${roles}${order}${civs}</div>` : "";
+  return scopes || roles || order || civs ? `<div class="card-controls">${scopes}${roles}${order}${civs}</div>` : "";
 }
 
 function civButton(id) {
@@ -436,7 +457,8 @@ function civPopup(id, civs) {
   </div>`;
 }
 
-function boardCard(b) {
+function boardCard(card) {
+  const b = viewOf(card);           // one game or all games, whichever the card shows now
   const r = cardRole[b.id] || "all";
   if (b.scope === "war") return warCard(b, r);
   if (b.scope === "units") return unitsCard(b, r);
@@ -498,6 +520,7 @@ function cardClick(e) {
   if (!card) return;
   const id = card.dataset.id, act = btn.dataset.act;
   if (act === "role") cardRole[id] = btn.dataset.role;
+  if (act === "view") (cardView[id] = btn.dataset.view), cardFlip.delete(id);     // each view opens on its best
   if (act === "side") btn.dataset.side === "least" ? cardFlip.add(id) : cardFlip.delete(id);
   if (act === "flip") cardFlip.has(id) ? cardFlip.delete(id) : cardFlip.add(id);
   if (act === "civs") civPop = civPop === id ? null : id;
@@ -506,7 +529,7 @@ function cardClick(e) {
   if (act === "civclose") civPop = null;
   const focus = act === "civs" && civPop === id ? ".civ-pop input"
     : act === "civclose" ? '[data-act="civs"]'
-    : `[data-act="${act}"]${btn.dataset.role ? `[data-role="${btn.dataset.role}"]` : ""}${btn.dataset.side ? `[data-side="${btn.dataset.side}"]` : ""}${btn.dataset.mode ? `[data-mode="${btn.dataset.mode}"]` : ""}`;
+    : `[data-act="${act}"]${btn.dataset.role ? `[data-role="${btn.dataset.role}"]` : ""}${btn.dataset.view ? `[data-view="${btn.dataset.view}"]` : ""}${btn.dataset.side ? `[data-side="${btn.dataset.side}"]` : ""}${btn.dataset.mode ? `[data-mode="${btn.dataset.mode}"]` : ""}`;
   redraw(id, focus);
 }
 
