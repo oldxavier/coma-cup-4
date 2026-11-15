@@ -57,7 +57,8 @@ watchSection();
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const team = (k) => (S.teams[k] ? S.teams[k].name : k);
 const person = (id) => (S.people[id] ? S.people[id].name : id);
-const label = (g) => `${team(g.a)} v ${team(g.b)} G${g.n}`;
+const STAGE_SHORT = { Quarterfinals: "QF", Semifinals: "SF", Final: "F" };
+const label = (g) => `${team(g.a)} v ${team(g.b)}${g.stage ? ` · ${STAGE_SHORT[g.stage] || g.stage}` : ""} G${g.n}`;
 
 function clock(s) {
   s = Math.max(0, Math.round(s));

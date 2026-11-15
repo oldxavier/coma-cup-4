@@ -89,9 +89,15 @@ function soloCopy() {
   document.querySelectorAll("[data-solo-placeholder]").forEach((el) => (el.placeholder = el.dataset.soloPlaceholder));
 }
 
-function gameLabel(tag) {
+// a playoff game's stage, shortened (QF, SF, F), so it stands apart from the same teams' group game
+const STAGE_SHORT = { Quarterfinals: "QF", Semifinals: "SF", Final: "F" };
+
+// "A v B G1", with a playoff game's stage before the game number unless the row shows it already
+function gameLabel(tag, bare) {
   const g = gamesById[tag];
-  return g ? `${team(g.a)} v ${team(g.b)} G${g.n}` : tag;
+  if (!g) return tag;
+  const stage = g.stage && !bare ? ` · ${STAGE_SHORT[g.stage] || g.stage}` : "";
+  return `${team(g.a)} v ${team(g.b)}${stage} G${g.n}`;
 }
 
 // where in the event a game was played: the playoff stage's name, else its round (and group, if any)
@@ -425,7 +431,7 @@ function civsOf(b) {
 
 // a row: the name (with the civ beside it), then one short line each for the game and any detail
 function who(b, r) {
-  if (b.scope === "match") return { main: gameLabel(r.g), lines: [D.meta.solo ? sidesHtml(r.g) : esc(gameStage(r.g))] };
+  if (b.scope === "match") return { main: gameLabel(r.g, !D.meta.solo), lines: [D.meta.solo ? sidesHtml(r.g) : esc(gameStage(r.g))] };
   if (b.scope === "object")
     return { main: r.o, lines: [`${esc(player(r.p))} ${civTag(r.civ)}`, esc(gameLabel(r.g))] };
   if (b.scope === "player")
