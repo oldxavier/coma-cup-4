@@ -642,8 +642,7 @@ function awardCard(a, i) {
 // the award graphics, each opening at full size; or, for awards written out, a contents list and the cards
 function showAwards() {
   if (D.awards.some((a) => a.stats)) {
-    document.getElementById("category-blurb").textContent =
-      `Rates are per minute played. Every comparison is against the whole field: all ${Object.keys(D.people).length} players, all flanks or all pockets.`;
+    document.getElementById("category-blurb").textContent = "";    // kept, empty: toTabTop measures from it
     document.getElementById("boards").innerHTML =
       `<ol class="aw-toc">${D.awards.map((a, i) => `<li><a href="#award-${i + 1}">${esc(a.title)}</a>: ${esc(a.name)}</li>`).join("")}</ol>
       <div class="aw-grid">${D.awards.map(awardCard).join("")}</div>`;
