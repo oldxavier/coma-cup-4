@@ -632,8 +632,25 @@ function showCategory() {
   if (el.querySelector("#units-table")) unitsTable();
 }
 
-// the award graphics, each opening at full size
+// an award written out: the winner and the stats that made them stand out, each with where it stands
+function awardCard(a, i) {
+  const stats = a.stats
+    .map(([v, l, c]) => `<li><strong>${esc(v).replace(/\n/g, "<br>")}</strong><span class="l">${esc(l)}</span><span class="c">${esc(c)}</span></li>`)
+    .join("");
+  return `<article class="aw" id="award-${i + 1}"><p class="aw-kicker">${esc(a.title)}</p><h3 class="aw-name">${esc(a.name)}</h3>
+    <p class="aw-sub">${esc(a.sub)}</p><ol class="aw-stats">${stats}</ol></article>`;
+}
+
+// the award graphics, each opening at full size; or, for awards written out, a contents list and the cards
 function showAwards() {
+  if (D.awards.some((a) => a.stats)) {
+    document.getElementById("category-blurb").textContent =
+      `Rates are per minute played. Every comparison is against the whole field: all ${Object.keys(D.people).length} players, all flanks or all pockets.`;
+    document.getElementById("boards").innerHTML =
+      `<ol class="aw-toc">${D.awards.map((a, i) => `<li><a href="#award-${i + 1}">${esc(a.title)}</a>: ${esc(a.name)}</li>`).join("")}</ol>
+      <div class="aw-grid">${D.awards.map(awardCard).join("")}</div>`;
+    return;
+  }
   document.getElementById("category-blurb").textContent = "The awards published after the final.";
   document.getElementById("boards").innerHTML = `<div class="award-gallery">${D.awards
     .map(
