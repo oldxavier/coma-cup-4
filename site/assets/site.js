@@ -632,11 +632,9 @@ function showCategory() {
   if (el.querySelector("#units-table")) unitsTable();
 }
 
-// an award written out: the winner and the stats that made them stand out, each with where it stands
+// an award written out: the winner and what made them stand out, each a short note with the number behind it
 function awardCard(a, i) {
-  const stats = a.stats
-    .map(([v, l, c]) => `<li><strong>${esc(v).replace(/\n/g, "<br>")}</strong><span class="l">${esc(l)}</span><span class="c">${esc(c)}</span></li>`)
-    .join("");
+  const stats = a.stats.map(([note, n]) => `<li><span class="note">${esc(note)}</span><span class="num">${esc(n)}</span></li>`).join("");
   return `<article class="aw" id="award-${i + 1}"><p class="aw-kicker">${esc(a.title)}</p><h3 class="aw-name">${esc(a.name)}</h3>
     <p class="aw-sub">${esc(a.sub)}</p><ol class="aw-stats">${stats}</ol></article>`;
 }

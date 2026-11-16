@@ -642,13 +642,13 @@ footer {
 @media (max-width: 860px) { .award-gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 520px) { .award-gallery { grid-template-columns: 1fr; } }
 
-/* awards written out: a contents list, then one card per award, two across, one on a phone */
+/* awards written out: a contents list, then one card per award, three across, one on a phone */
 .aw-toc { grid-column: 1 / -1; margin: 0 0 .4rem; padding-left: 1.3rem; font-size: .9rem; line-height: 1.7; }
 .aw-toc a { color: var(--green); font-weight: 650; }
-.aw-grid { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; align-items: stretch; }
+.aw-grid { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; align-items: stretch; }
 .aw {
   min-width: 0;
-  padding: 1.3rem 1.4rem 1.2rem;
+  padding: 1.3rem 1.4rem 1.1rem;
   border: 1px solid var(--line);
   border-top: 3px solid var(--gold);
   border-radius: 5px;
@@ -657,21 +657,18 @@ footer {
 }
 .aw:target { box-shadow: 0 0 0 3px var(--gold-soft); }
 .aw-kicker { margin: 0 0 .35rem; color: var(--gold); font: .68rem/1.4 var(--mono); letter-spacing: .06em; text-transform: uppercase; }
-.aw-name { margin: 0; font: 400 clamp(1.9rem, 4vw, 2.6rem)/1.05 var(--serif); letter-spacing: -.03em; overflow-wrap: anywhere; }
+.aw-name { margin: 0; font: 400 clamp(1.9rem, 3.4vw, 2.4rem)/1.05 var(--serif); letter-spacing: -.03em; overflow-wrap: anywhere; }
 .aw-sub { margin: .35rem 0 0; color: var(--muted); font-size: .8rem; }
-.aw-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 1.1rem 0 0; padding: 0; list-style: none; border-top: 1px solid #ebeae4; }
-.aw-stats li { padding: .9rem 1rem .85rem 0; border-bottom: 1px solid #ebeae4; }
-.aw-stats li:nth-child(even) { padding-left: 1rem; border-left: 1px solid #ebeae4; }
-.aw-stats li:nth-last-child(-n + 2):nth-child(odd), .aw-stats li:last-child { border-bottom: 0; }
-.aw-stats strong { display: block; color: var(--green); font: 500 1.6rem/1.15 var(--mono); }
-.aw-stats .l { display: block; margin-top: .2rem; font-size: .82rem; font-weight: 650; line-height: 1.3; }
-.aw-stats .c { display: block; margin-top: .15rem; color: var(--muted); font-size: .74rem; line-height: 1.4; }
-@media (max-width: 760px) {
+/* each note: what stands out, then the number behind it */
+.aw-stats { margin: 1rem 0 0; padding: 0; list-style: none; border-top: 1px solid #ebeae4; }
+.aw-stats li { padding: .7rem 0 .65rem .85rem; border-bottom: 1px solid #ebeae4; box-shadow: inset 2px 0 0 var(--gold-soft); }
+.aw-stats li:last-child { border-bottom: 0; }
+.aw-stats .note { display: block; font-size: .88rem; font-weight: 650; line-height: 1.35; }
+.aw-stats .num { display: block; margin-top: .15rem; color: var(--green); font: .8rem/1.35 var(--mono); }
+@media (max-width: 1060px) { .aw-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 680px) {
   .aw-grid { grid-template-columns: 1fr; }
-  .aw { padding: 1.1rem 1.05rem 1rem; }
-  .aw-stats strong { font-size: 1.35rem; }
-  .aw-stats li { padding-right: .7rem; }
-  .aw-stats li:nth-child(even) { padding-left: .7rem; }
+  .aw { padding: 1.1rem 1.05rem .9rem; }
 }
 
 /* over time: one line per player, averaged over their games in view; the ranked list beside it */
